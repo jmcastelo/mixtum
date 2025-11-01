@@ -158,12 +158,12 @@ class Core(QObject):
                 row = row.rstrip()
                 self.num_geno_cols.append(len(row))
                 if self.num_geno_rows % 1000 == 0:
-                    progress_callback[str, str].emit('geno', f'Number of rows: {self.num_geno_rows}')
+                    progress_callback[str, str].emit('geno', f'Number of rows in .geno: {self.num_geno_rows}')
                 self.num_geno_rows += 1
 
         self.num_alleles = self.num_geno_rows
 
-        progress_callback[str, str].emit('geno', f'Number of rows: {self.num_geno_rows}')
+        progress_callback[str, str].emit('geno', f'Number of rows in .geno: {self.num_geno_rows}')
 
         return True
 
@@ -174,7 +174,7 @@ class Core(QObject):
 
         with self.ind_file_path.open(mode = 'r', encoding = 'utf-8') as file:
             for index, row in enumerate(file):
-                progress_callback[str, str].emit('ind', f'Number of rows: {self.num_ind_rows}')
+                progress_callback[str, str].emit('ind', f'Number of rows in .ind: {self.num_ind_rows}')
 
                 columns = row.split()
                 pop_name = columns[-1]
@@ -188,7 +188,7 @@ class Core(QObject):
 
         self.avail_pops = list(self.avail_pops_indices.keys())
 
-        progress_callback[str, str].emit('ind', f'Number of rows: {self.num_ind_rows}')
+        progress_callback[str, str].emit('ind', f'Number of rows in .ind: {self.num_ind_rows}')
 
         return True
 
@@ -203,10 +203,10 @@ class Core(QObject):
                 self.snp_names.append(columns[0])
 
                 if self.num_snp_rows % 1000 == 0:
-                    progress_callback[str, str].emit('snp', f'Number of rows: {self.num_snp_rows}')
+                    progress_callback[str, str].emit('snp', f'Number of rows in .snp: {self.num_snp_rows}')
                 self.num_snp_rows += 1
 
-        progress_callback[str, str].emit('snp', f'Number of rows: {self.num_snp_rows}')
+        progress_callback[str, str].emit('snp', f'Number of rows in .snp: {self.num_snp_rows}')
 
         return True
 
@@ -270,8 +270,8 @@ class Core(QObject):
         event.set()
 
     @Slot(int)
-    def set_num_procs(self, np):
-        self.num_procs = np
+    def set_num_procs(self, procs):
+        self.num_procs = procs
 
     # Parallel compute frequencies of all populations
     def parallel_compute_populations_frequencies(self, progress_callback):
