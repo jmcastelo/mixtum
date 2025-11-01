@@ -61,12 +61,15 @@ class Helper(QObject):
 
         # Log system
         self.log_text = ''
-        self.log = LogSystem(['main', 'geno', 'ind', 'snp', 'pops', 'check'])
+        self.log = LogSystem(['main', 'geno', 'ind', 'snp', 'pops', 'check', 'progress', 'timing', 'percent'])
         self.log.set_entry('main', 'Checking input files...')
         self.log.append_entry('geno', '')
         self.log.append_entry('ind', '')
         self.log.append_entry('snp', '')
         self.log.append_entry('pops', '')
+        self.log.append_entry('timing', '')
+        self.log.append_entry('percent', '')
+        self.log.append_entry('check', '')
 
         self.log.changed.connect(self.set_log_text)
 
@@ -138,9 +141,11 @@ class Helper(QObject):
     @Slot(str)
     def parsing_finished(self, worker_name):
         self.core.check_parsed_pops()
+
         self.log.set_entry('main', 'Parsing and checking finished.')
         self.print_log_text()
-        self.app.quit()
+
+        self.compute_frequencies()
 
     @Slot(list)
     def pops_check_failed(self, missing_pops):
@@ -152,6 +157,96 @@ class Helper(QObject):
         pops_worker.signals.finished.connect(self.parsing_finished)
 
         self.thread_pool.start(pops_worker)
+
+    @Slot(str, str, int)
+    def log_computation_progress(self, key, message, line_num):
+        # self.log.set_text_from_entry(key, message, line_num)
+        # self.print_log_text()
+        if len(message) > 0:
+            print(message, flush=True)
+
+    @Slot(int)
+    def computation_progress(self, index):
+        if index > 0:
+            percent = f'{100 * index / len(self.core.selected_pops):.2f}%'
+            # self.log.set_text_from_entry('percent', percent, 0)
+            # self.print_log_text()
+            print(percent, flush=True)
+
+    @Slot(bool)
+    def computation_result(self, status):
+        if not status:
+            self.app.quit()
+
+    @Slot(str)
+    def computation_finished(self, worker_name):
+        self.compute_results()
+
+    def compute_frequencies(self):
+        self.log.clear_entry('main')
+        self.log.clear_entry('geno')
+        self.log.clear_entry('ind')
+        self.log.clear_entry('snp')
+        self.log.clear_entry('pops')
+        self.log.clear_entry('check')
+
+        print('')
+
+        worker = Worker('freqs', self.core.parallel_compute_populations_frequencies)
+        worker.signals.progress[int].connect(self.computation_progress)
+        worker.signals.progress[str, str, int].connect(self.log_computation_progress)
+        worker.signals.result.connect(self.computation_result)
+        worker.signals.finished.connect(self.computation_finished)
+
+        self.thread_pool.start(worker)
+
+    def compute_results(self):
+        print('\nComputing:')
+
+        self.core.init_admixture_model()
+
+        n = 1
+        ntotal = 9
+
+        print(f"({n}/{ntotal}) Mixing coefficient pre-jl")
+        self.core.mixing_coefficient_pre_jl()
+        n += 1
+
+        print(f"({n}/{ntotal}) Admixture angle pre-jl")
+        self.core.admixture_angle_pre_jl()
+        n += 1
+
+        print(f"({n}/{ntotal}) f3")
+        self.core.f3()
+        n += 1
+
+        print(f"({n}/{ntotal}) f4'")
+        self.core.f4_prime()
+        n += 1
+
+        print(f"({n}/{ntotal}) Alpha'")
+        self.core.alpha_prime()
+        n += 1
+
+        print(f"({n}/{ntotal}) f4-standard")
+        self.core.f4_std()
+        n += 1
+
+        print(f"({n}/{ntotal}) Alpha-standard")
+        self.core.alpha_standard()
+        n += 1
+
+        print(f"({n}/{ntotal}) Admixture angle post-jl")
+        self.core.admixture_angle_post_jl()
+        n += 1
+
+        print(f"({n}/{ntotal}) f4-ratio")
+        self.core.f4_ratio()
+
+        print('\nResults:')
+        print(self.core.admixture_data())
+
+        self.app.quit()
 
 
 
@@ -183,6 +278,8 @@ def main():
     app = QCoreApplication()
 
     core = Core()
+
+    core.set_num_procs(num_procs)
 
     helper = Helper(core, app)
 

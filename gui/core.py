@@ -17,13 +17,14 @@
 from pathlib import Path
 import numpy as np
 from time import time
-from multiprocessing import Process, Array, Event
+from multiprocessing import get_context
 from math import ceil, isclose
 
 from PySide6.QtCore import QObject, Signal, Slot
 
+ctx = get_context('spawn')
 
-event = Event()
+event = ctx.Event()
 
 # Compute frequencies given list of alleles
 def allele_frequency(alleles):
@@ -271,6 +272,7 @@ class Core(QObject):
 
     @Slot(int)
     def set_num_procs(self, procs):
+        if procs < 1: procs = 1
         self.num_procs = procs
 
     # Parallel compute frequencies of all populations
@@ -283,7 +285,7 @@ class Core(QObject):
         batch_size = ceil(num_sel_pops / self.num_procs)
         index = 0
 
-        allele_freqs = [Array('d', self.num_alleles) for i in range(num_sel_pops)]
+        allele_freqs = [ctx.Array('d', self.num_alleles) for i in range(num_sel_pops)]
 
         progress_callback[int].emit(0)
         progress_callback[str, str, int].emit('main', f'Computing {self.num_alleles} frequencies per population for {num_sel_pops} populations in {batch_size} batches of {self.num_procs} parallel processes...', 0)
@@ -297,7 +299,7 @@ class Core(QObject):
 
             for proc in range(self.num_procs):
                 if index < num_sel_pops:
-                    p = Process(target = population_allele_frequencies, args = (self.geno_file_path, pop_indices[index], allele_freqs[index]))
+                    p = ctx.Process(target = population_allele_frequencies, args = (self.geno_file_path, pop_indices[index], allele_freqs[index]))
                     procs.append(p)
                     p.start()
                     computing_pops.append(self.selected_pops[index])
@@ -321,9 +323,9 @@ class Core(QObject):
             num_remaining_indices = sum([len(indices) for indices in pop_indices[index:]])
             estimated_remaining_time = num_remaining_indices * elapsed_time_per_index
 
-            progress_callback[int].emit(index)
             progress_callback[str, str, int].emit('timing', f'Estimated remaining time: {self.time_format(estimated_remaining_time)}', 0)
             progress_callback[str, str, int].emit('timing', f'Elapsed time: {self.time_format(elapsed_time)}', 1)
+            progress_callback[int].emit(index)
 
         if event.is_set():
             progress_callback[str, str, int].emit('main', 'Computation stopped!', 0)
