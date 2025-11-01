@@ -17,11 +17,7 @@
 import argparse, sys
 from pathlib import Path
 
-from PySide6.QtCore import QCoreApplication, QObject, Signal, Slot, QThreadPool
-
 from gui.core import Core
-from gui.worker import Worker
-from gui.log_system import LogSystem
 
 
 
@@ -39,169 +35,70 @@ def check_dir_path(dir_path):
 
 
 
-class Helper(QObject):
-    def __init__(self, core, app):
-        QObject.__init__(self)
-
+class Helper():
+    def __init__(self, core):
         # Core
         self.core = core
 
-        # App
-        self.app = app
+        self.input_files_messages = { 'geno': '', 'ind': '', 'snp': '', 'pops': '' }
 
-        # Check error
-        self.core.geno_file_error.connect(self.geno_check_failed)
-        self.core.ind_file_error.connect(self.ind_check_failed)
-        self.core.snp_file_error.connect(self.snp_check_failed)
-        self.core.parsed_pops_error.connect(self.pops_check_failed)
+    def print_input_files_progress(self, key, message):
+        self.input_files_messages[key] = message
 
-        # Thread pool
-        self.thread_pool = QThreadPool()
-        self.worker_finished = {'geno': False, 'ind': False, 'snp': False}
+    def print_computation_progress(self, *args):
+        if len(args) == 1 and isinstance(args[0], int):
+            print(f'{100 * args[0] / len(self.core.selected_pops):.2f}%')
+        elif len(args) == 3 and isinstance(args[0], str) and isinstance(args[1], str) and isinstance(args[2], int):
+            print(args[1])
 
-        # Log system
-        self.log_text = ''
-        self.log = LogSystem(['main', 'geno', 'ind', 'snp', 'pops', 'check', 'progress', 'timing', 'percent'])
-        self.log.set_entry('main', 'Checking input files...')
-        self.log.append_entry('geno', '')
-        self.log.append_entry('ind', '')
-        self.log.append_entry('snp', '')
-        self.log.append_entry('pops', '')
-        self.log.append_entry('timing', '')
-        self.log.append_entry('percent', '')
-        self.log.append_entry('check', '')
+    def run(self):
+        print(f'Mixtum v{self.core.version}\n')
+        print('Parsing and checking input files...')
 
-        self.log.changed.connect(self.set_log_text)
+        self.check_input_files()
+        self.parse_pops_file()
 
-        self.core.file_path_set.connect(self.log_file_path)
+        for key, message in self.input_files_messages.items():
+            print(f'{key} file: {message}')
 
-    def print_log_text(self):
-        print(self.log_text)
-
-    @Slot(str)
-    def set_log_text(self, text):
-        self.log_text = text
-
-    @Slot(str, str)
-    def log_file_path(self, key, file_path):
-        self.log.set_entry(key, file_path, 0)
-
-    @Slot(str, str)
-    def log_progress(self, key, message):
-        self.log.set_entry(key, message, 0)
-
-    @Slot(str)
-    def checking_finished(self, worker_name):
-        self.worker_finished[worker_name] = True
-
-        if all([status for name, status in self.worker_finished.items()]):
-            if self.core.check_input_files():
-                self.log.append_entry('check', 'Parsed input files seem to have a valid structure.')
-                self.parse_pops_file()
-            else:
-                self.print_log_text()
-                self.app.quit()
-
-    @Slot()
-    def geno_check_failed(self):
-        self.log.set_entry('main', 'Checking error!')
-        self.log.append_entry('check', 'Error in .geno file: not all rows have the same number of columns.')
-
-    @Slot(int, int)
-    def ind_check_failed(self, num_pops, num_cols):
-        self.log.set_entry('main', 'Checking error!')
-        self.log.append_entry('check', f'Error: Number of populations ({num_pops}) in .ind file is not equal to number of columns ({num_cols}) in .geno file.')
-
-    @Slot(int, int)
-    def snp_check_failed(self, num_alleles, num_rows):
-        self.log.set_entry('main', 'Checking error!')
-        self.log.append_entry('check', f'Error: Number of alleles ({num_alleles}) in .snp file is not equal to number of rows ({num_rows}) in .geno file.')
-
-    def check_input_files(self):
-        self.print_log_text()
-
-        self.worker_finished = {'geno': False, 'ind': False, 'snp': False}
-
-        geno_worker = Worker('geno', self.core.geno_table_shape)
-        geno_worker.signals.progress[str, str].connect(self.log_progress)
-        geno_worker.signals.finished.connect(self.checking_finished)
-
-        ind_worker = Worker('ind', self.core.parse_ind_file)
-        ind_worker.signals.progress[str, str].connect(self.log_progress)
-        ind_worker.signals.finished.connect(self.checking_finished)
-
-        snp_worker = Worker('snp', self.core.parse_snp_file)
-        snp_worker.signals.progress[str, str].connect(self.log_progress)
-        snp_worker.signals.finished.connect(self.checking_finished)
-
-        self.thread_pool.start(geno_worker)
-        self.thread_pool.start(ind_worker)
-        self.thread_pool.start(snp_worker)
-
-    @Slot(str)
-    def parsing_finished(self, worker_name):
-        self.core.check_parsed_pops()
-
-        self.log.set_entry('main', 'Parsing and checking finished.')
-        self.print_log_text()
+        print('Parsing and checking finished.\n')
 
         self.compute_frequencies()
 
-    @Slot(list)
-    def pops_check_failed(self, missing_pops):
-        self.log.set_entry('pops', f'Error: The following populations are missing from .ind file and were unselected: {','.join(missing_pops)}')
-
-    def parse_pops_file(self):
-        pops_worker = Worker('pops', self.core.parse_selected_populations)
-        pops_worker.signals.progress[str, str].connect(self.log_progress)
-        pops_worker.signals.finished.connect(self.parsing_finished)
-
-        self.thread_pool.start(pops_worker)
-
-    @Slot(str, str, int)
-    def log_computation_progress(self, key, message, line_num):
-        # self.log.set_text_from_entry(key, message, line_num)
-        # self.print_log_text()
-        if len(message) > 0:
-            print(message, flush=True)
-
-    @Slot(int)
-    def computation_progress(self, index):
-        if index > 0:
-            percent = f'{100 * index / len(self.core.selected_pops):.2f}%'
-            # self.log.set_text_from_entry('percent', percent, 0)
-            # self.print_log_text()
-            print(percent, flush=True)
-
-    @Slot(bool)
-    def computation_result(self, status):
-        if not status:
-            self.app.quit()
-
-    @Slot(str)
-    def computation_finished(self, worker_name):
         self.compute_results()
 
+    def check_input_files(self):
+        self.core.geno_table_shape(self.print_input_files_progress)
+        self.core.parse_ind_file(self.print_input_files_progress)
+        self.core.parse_snp_file(self.print_input_files_progress)
+
+        valid = True
+        if not self.core.check_geno_file():
+            print('Error in .geno file: not all rows have the same number of columns.')
+            valid = False
+        if not self.core.check_ind_and_geno():
+            print('Error: Number of populations in .ind file is not equal to number of columns in .geno file.')
+            valid = False
+        if not self.core.check_snp_and_geno():
+            print('Error: Number of alleles in .snp file is not equal to number of rows in .geno file.')
+            valid = False
+
+        if not valid:
+            sys.exit(1)
+
+        print('Parsed input files seem to have a valid structure.')
+
+    def parse_pops_file(self):
+        self.core.parse_selected_populations(self.print_input_files_progress)
+        missing_pops = self.core.check_parsed_pops()
+        if len(missing_pops) > 0:
+            print(f'Error: The following populations are missing from .ind file and were deselected: {','.join(missing_pops)}')
+
     def compute_frequencies(self):
-        self.log.clear_entry('main')
-        self.log.clear_entry('geno')
-        self.log.clear_entry('ind')
-        self.log.clear_entry('snp')
-        self.log.clear_entry('pops')
-        self.log.clear_entry('check')
-
-        print('')
-
-        worker = Worker('freqs', self.core.parallel_compute_populations_frequencies)
-        worker.signals.progress[int].connect(self.computation_progress)
-        worker.signals.progress[str, str, int].connect(self.log_computation_progress)
-        worker.signals.result.connect(self.computation_result)
-        worker.signals.finished.connect(self.computation_finished)
-
-        self.thread_pool.start(worker)
+        self.core.parallel_compute_populations_frequencies(self.print_computation_progress)
 
     def compute_results(self):
-        print('\nComputing:')
+        print('\nComputing...')
 
         self.core.init_admixture_model()
 
@@ -246,18 +143,21 @@ class Helper(QObject):
         print('\nResults:')
         print(self.core.admixture_data())
 
-        self.app.quit()
+    def plot(self):
+        self.core.plot()
 
 
+if __name__ == '__main__':
+    core = Core()
 
-def main():
-    parser = argparse.ArgumentParser(description = 'Mixtum: The geometry of admixture in population genetics')
+    parser = argparse.ArgumentParser(description = f'Mixtum v{core.version}: The geometry of admixture in population genetics')
     parser.add_argument('--geno', type = str, required = True, help = 'Path of .geno file')
     parser.add_argument('--ind', type = str, required = True, help = 'Path of .ind file')
     parser.add_argument('--snp', type = str, required = True, help = 'Path of .snp file')
     parser.add_argument('--pops', type = str, required = True, help = 'Path of selected populations file')
     parser.add_argument('--outdir', type = str, required = True, help = 'Path of output dir')
-    parser.add_argument('--nprocs', type = int, default = 1, help = 'Number of parallel computation processes')
+    parser.add_argument('--nprocs', type = int, default = 1, help = 'Number of parallel computation processes (default 1)')
+    parser.add_argument('--plot', action=argparse.BooleanOptionalAction, help='Plot fits and histogram')
 
     args = parser.parse_args()
 
@@ -275,22 +175,16 @@ def main():
     check_file_path(pops_file_path)
     check_dir_path(out_dir_path)
 
-    app = QCoreApplication()
-
-    core = Core()
-
     core.set_num_procs(num_procs)
-
-    helper = Helper(core, app)
 
     core.set_geno_file_path(args.geno)
     core.set_ind_file_path(args.ind)
     core.set_snp_file_path(args.snp)
     core.set_pops_file_path(args.pops)
 
-    helper.check_input_files()
+    helper = Helper(core)
 
-    sys.exit(app.exec())
+    helper.run()
 
-if __name__ == '__main__':
-    main()
+    if args.plot:
+        helper.plot()

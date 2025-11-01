@@ -19,8 +19,7 @@ import numpy as np
 from time import time
 from multiprocessing import get_context
 from math import ceil, isclose
-
-from PySide6.QtCore import QObject, Signal, Slot
+import matplotlib.pyplot as plt
 
 ctx = get_context('spawn')
 
@@ -51,21 +50,9 @@ def population_allele_frequencies(file_path, pop_indices, allele_freqs):
 
 
 
-class Core(QObject):
-    # Signals
-    file_path_set = Signal(str, str)
-
-    input_file_paths_state = Signal(bool)
-    pops_file_path_state = Signal(bool)
-
-    geno_file_error = Signal()
-    ind_file_error = Signal(int, int)
-    snp_file_error = Signal(int, int)
-
-    parsed_pops_error = Signal(list)
-
+class Core:
     def __init__(self):
-        QObject.__init__(self)
+        self.version = '0.2'
 
         self.geno_file_path = Path('')
         self.ind_file_path = Path('')
@@ -122,32 +109,17 @@ class Core(QObject):
         self.explained_variance = []
         self.pca_eigenvalues = []
 
-    def check_file_paths(self):
-        self.input_file_paths_state.emit(bool(self.geno_file_path.is_file() and self.ind_file_path.is_file() and self.snp_file_path.is_file()))
-
-    @Slot(str)
     def set_geno_file_path(self, file_path):
         self.geno_file_path = Path(file_path)
-        self.file_path_set.emit('geno', file_path)
-        self.check_file_paths()
 
-    @Slot(str)
     def set_ind_file_path(self, file_path):
         self.ind_file_path = Path(file_path)
-        self.file_path_set.emit('ind', file_path)
-        self.check_file_paths()
 
-    @Slot(str)
     def set_snp_file_path(self, file_path):
         self.snp_file_path = Path(file_path)
-        self.file_path_set.emit('snp', file_path)
-        self.check_file_paths()
 
-    @Slot(str)
     def set_pops_file_path(self, file_path):
         self.pops_file_path = Path(file_path)
-        self.file_path_set.emit('pops', file_path)
-        self.pops_file_path_state.emit(self.pops_file_path.is_file())
 
     # Count number of rows and columns in .geno input file
     def geno_table_shape(self, progress_callback):
@@ -159,12 +131,14 @@ class Core(QObject):
                 row = row.rstrip()
                 self.num_geno_cols.append(len(row))
                 if self.num_geno_rows % 1000 == 0:
-                    progress_callback[str, str].emit('geno', f'Number of rows in .geno: {self.num_geno_rows}')
+                    # progress_callback[str, str].emit('geno', f'Number of rows in .geno: {self.num_geno_rows}')
+                    progress_callback('geno', f'Number of rows: {self.num_geno_rows}')
                 self.num_geno_rows += 1
 
         self.num_alleles = self.num_geno_rows
 
-        progress_callback[str, str].emit('geno', f'Number of rows in .geno: {self.num_geno_rows}')
+        # progress_callback[str, str].emit('geno', f'Number of rows in .geno: {self.num_geno_rows}')
+        progress_callback('geno', f'Number of rows: {self.num_geno_rows}')
 
         return True
 
@@ -175,7 +149,8 @@ class Core(QObject):
 
         with self.ind_file_path.open(mode = 'r', encoding = 'utf-8') as file:
             for index, row in enumerate(file):
-                progress_callback[str, str].emit('ind', f'Number of rows in .ind: {self.num_ind_rows}')
+                # progress_callback[str, str].emit('ind', f'Number of rows in .ind: {self.num_ind_rows}')
+                progress_callback('ind', f'Number of rows: {self.num_ind_rows}')
 
                 columns = row.split()
                 pop_name = columns[-1]
@@ -189,7 +164,8 @@ class Core(QObject):
 
         self.avail_pops = list(self.avail_pops_indices.keys())
 
-        progress_callback[str, str].emit('ind', f'Number of rows in .ind: {self.num_ind_rows}')
+        # progress_callback[str, str].emit('ind', f'Number of rows in .ind: {self.num_ind_rows}')
+        progress_callback('ind', f'Number of rows: {self.num_ind_rows}')
 
         return True
 
@@ -204,28 +180,23 @@ class Core(QObject):
                 self.snp_names.append(columns[0])
 
                 if self.num_snp_rows % 1000 == 0:
-                    progress_callback[str, str].emit('snp', f'Number of rows in .snp: {self.num_snp_rows}')
+                    # progress_callback[str, str].emit('snp', f'Number of rows in .snp: {self.num_snp_rows}')
+                    progress_callback('snp', f'Number of rows: {self.num_snp_rows}')
                 self.num_snp_rows += 1
 
-        progress_callback[str, str].emit('snp', f'Number of rows in .snp: {self.num_snp_rows}')
+        # progress_callback[str, str].emit('snp', f'Number of rows in .snp: {self.num_snp_rows}')
+        progress_callback('snp', f'Number of rows: {self.num_snp_rows}')
 
         return True
 
-    # Check input file consistency
-    def check_input_files(self):
-        valid = True
+    def check_geno_file(self):
+        return all(nc == self.num_geno_cols[0] for nc in self.num_geno_cols)
 
-        if not all(nc == self.num_geno_cols[0] for nc in self.num_geno_cols):
-            self.geno_file_error.emit()
-            valid = False
-        if self.num_ind_rows != self.num_geno_cols[0]:
-            self.ind_file_error.emit(self.num_ind_rows, self.num_geno_cols[0])
-            valid = False
-        if self.num_snp_rows != self.num_geno_rows:
-            self.snp_file_error.emit(self.num_snp_rows, self.num_geno_rows)
-            valid = False
+    def check_ind_and_geno(self):
+        return self.num_ind_rows == self.num_geno_cols[0]
 
-        return valid
+    def check_snp_and_geno(self):
+        return self.num_snp_rows == self.num_geno_rows
 
     # Parse input file containing selected populations
     def parse_selected_populations(self, progress_callback):
@@ -238,7 +209,8 @@ class Core(QObject):
                 self.parsed_pops.append(columns[0])
 
                 num_pops += 1
-                progress_callback[str, str].emit('pops', f'Number of pops: {num_pops}')
+                # progress_callback[str, str].emit('pops', f'Number of pops: {num_pops}')
+                progress_callback('pops', f'Number of pops: {num_pops}')
 
         return True
 
@@ -247,8 +219,8 @@ class Core(QObject):
             missing_pops = [pop for pop in self.parsed_pops if pop not in self.avail_pops]
             self.parsed_pops = [pop for pop in self.parsed_pops if pop in self.avail_pops]
             self.reset_pops()
-            if len(missing_pops) > 0:
-                self.parsed_pops_error.emit(missing_pops)
+            return missing_pops
+        return []
 
 
     def append_pops(self, pops):
@@ -266,11 +238,9 @@ class Core(QObject):
         seconds = seconds % 60
         return f'{minutes} minutes, {seconds:.1f} seconds'
 
-    @Slot()
     def stop_computation(self):
         event.set()
 
-    @Slot(int)
     def set_num_procs(self, procs):
         if procs < 1: procs = 1
         self.num_procs = procs
@@ -287,8 +257,11 @@ class Core(QObject):
 
         allele_freqs = [ctx.Array('d', self.num_alleles) for i in range(num_sel_pops)]
 
-        progress_callback[int].emit(0)
-        progress_callback[str, str, int].emit('main', f'Computing {self.num_alleles} frequencies per population for {num_sel_pops} populations in {batch_size} batches of {self.num_procs} parallel processes...', 0)
+        # progress_callback[int].emit(0)
+        # progress_callback[str, str, int].emit('main', f'Computing {self.num_alleles} frequencies per population for {num_sel_pops} populations in {batch_size} batches of {self.num_procs} parallel processes...', 0)
+
+        progress_callback('main', f'Computing {self.num_alleles} frequencies per population for {num_sel_pops} populations in {batch_size} batches of {self.num_procs} parallel processes...', 0)
+        progress_callback(0)
 
         num_indices = 0
         t1 = time()
@@ -308,7 +281,8 @@ class Core(QObject):
                 else:
                     break
 
-            progress_callback[str, str, int].emit('progress', 'Computing populations: ' + ' '.join(computing_pops), 0)
+            # progress_callback[str, str, int].emit('progress', 'Computing populations: ' + ' '.join(computing_pops), 0)
+            progress_callback('progress', 'Computing populations: ' + ' '.join(computing_pops), 0)
 
             for p in procs:
                 p.join()
@@ -323,19 +297,32 @@ class Core(QObject):
             num_remaining_indices = sum([len(indices) for indices in pop_indices[index:]])
             estimated_remaining_time = num_remaining_indices * elapsed_time_per_index
 
-            progress_callback[str, str, int].emit('timing', f'Estimated remaining time: {self.time_format(estimated_remaining_time)}', 0)
-            progress_callback[str, str, int].emit('timing', f'Elapsed time: {self.time_format(elapsed_time)}', 1)
-            progress_callback[int].emit(index)
+            # progress_callback[str, str, int].emit('timing', f'Estimated remaining time: {self.time_format(estimated_remaining_time)}', 0)
+            # progress_callback[str, str, int].emit('timing', f'Elapsed time: {self.time_format(elapsed_time)}', 1)
+            # progress_callback[int].emit(index)
+
+            progress_callback('timing', f'Estimated remaining time: {self.time_format(estimated_remaining_time)}', 0)
+            progress_callback('timing', f'Elapsed time: {self.time_format(elapsed_time)}', 1)
+            progress_callback(index)
 
         if event.is_set():
-            progress_callback[str, str, int].emit('main', 'Computation stopped!', 0)
-            progress_callback[str, str, int].emit('progress', 'Allele frequencies unchanged from previous computation.', 0)
-            progress_callback[str, str, int].emit('timing', '', 0)
+            # progress_callback[str, str, int].emit('main', 'Computation stopped!', 0)
+            # progress_callback[str, str, int].emit('progress', 'Allele frequencies unchanged from previous computation.', 0)
+            # progress_callback[str, str, int].emit('timing', '', 0)
+
+            progress_callback('main', 'Computation stopped!', 0)
+            progress_callback('progress', 'Allele frequencies unchanged from previous computation.', 0)
+            progress_callback('timing', '', 0)
+
             return False
 
-        progress_callback[str, str, int].emit('main', 'Computation finished.', 0)
-        progress_callback[str, str, int].emit('progress', '', 0)
-        progress_callback[str, str, int].emit('check', 'Checking and removing invalid SNPs...', 0)
+        # progress_callback[str, str, int].emit('main', 'Computation finished.', 0)
+        # progress_callback[str, str, int].emit('progress', '', 0)
+        # progress_callback[str, str, int].emit('check', 'Checking and removing invalid SNPs...', 0)
+
+        progress_callback('main', 'Computation finished.', 0)
+        progress_callback('progress', '', 0)
+        progress_callback('check', 'Checking and removing invalid SNPs...', 0)
 
         invalid_indices = np.unique(np.array([index for freqs in allele_freqs for index, freq in enumerate(freqs.get_obj()) if freq == -1], dtype = int))
         self.num_valid_alleles = self.num_alleles - invalid_indices.size
@@ -344,8 +331,11 @@ class Core(QObject):
         for i in range(len(allele_freqs)):
             valid_allele_freqs.append(np.delete(allele_freqs[i], invalid_indices))
 
-        progress_callback[str, str, int].emit('check', 'Checking SNPs finished.', 0)
-        progress_callback[str, str, int].emit('check', f'Number of excluded SNPs: {len(invalid_indices)}', 1)
+        # progress_callback[str, str, int].emit('check', 'Checking SNPs finished.', 0)
+        # progress_callback[str, str, int].emit('check', f'Number of excluded SNPs: {len(invalid_indices)}', 1)
+
+        progress_callback('check', 'Checking SNPs finished.', 0)
+        progress_callback('check', f'Number of excluded SNPs: {len(invalid_indices)}', 1)
 
         self.allele_frequencies = {}
         for index, pop in enumerate(self.selected_pops):
@@ -614,29 +604,86 @@ class Core(QObject):
 
     # Compute all results
     def compute_results(self, progress_callback):
-        progress_callback[int].emit(0)
+        # progress_callback[int].emit(0)
+        progress_callback(0)
         self.mixing_coefficient_pre_jl()
-        progress_callback[int].emit(1)
+        # progress_callback[int].emit(1)
+        progress_callback(1)
         self.admixture_angle_pre_jl()
-        progress_callback[int].emit(2)
+        # progress_callback[int].emit(2)
+        progress_callback(2)
         self.f3()
-        progress_callback[int].emit(3)
+        # progress_callback[int].emit(3)
+        progress_callback(3)
         self.f4_prime()
-        progress_callback[int].emit(4)
+        # progress_callback[int].emit(4)
+        progress_callback(4)
         self.alpha_prime()
-        progress_callback[int].emit(5)
+        # progress_callback[int].emit(5)
+        progress_callback(5)
         self.f4_std()
-        progress_callback[int].emit(6)
+        # progress_callback[int].emit(6)
+        progress_callback(6)
         self.alpha_standard()
-        progress_callback[int].emit(7)
+        # progress_callback[int].emit(7)
+        progress_callback(7)
         self.admixture_angle_post_jl()
-        progress_callback[int].emit(8)
+        # progress_callback[int].emit(8)
+        progress_callback(8)
         self.f4_ratio()
-        progress_callback[int].emit(9)
+        # progress_callback[int].emit(9)
+        progress_callback(9)
 
         self.aux_pops_computed = self.aux_pops
 
         return True
+
+    # Ploat a fit
+
+    def plot_fit(self, x, y, alpha, title, xlabel, ylabel):
+        fig, ax = plt.subplots()
+
+        ax.set_title(title)
+
+        ax.set_xlabel(xlabel)
+        ax.set_ylabel(ylabel)
+
+        ax.plot(x, y, '.')
+        ax.plot(x, alpha * x)
+
+        plt.show()
+
+    # Plot a histogram
+
+    def plot_histogram(self, histogram, title, xlabel, ylabel):
+        counts = histogram[0]
+        edges = histogram[1]
+
+        fig, ax = plt.subplots()
+
+        ax.set_title(title)
+
+        ax.set_xlabel(xlabel)
+        ax.set_ylabel(ylabel)
+
+        ax.bar(edges[:-1], counts, width=np.diff(edges), edgecolor='black', align='edge')
+
+        plt.show()
+
+    def plot(self):
+        self.plot_fit(self.f4ab_prime, self.f4xb_prime, self.alpha,
+            f'Renormalized admixture: {self.hybrid_pop} = alpha {self.parent1_pop} + (1 - alpha) {self.parent2_pop}',
+            f"f4'({self.parent1_pop}, {self.parent2_pop}; i, j)",
+            f"f4'({self.hybrid_pop}, {self.parent2_pop}; i, j)")
+        self.plot_fit(self.f4ab_std, self.f4xb_std, self.alpha_std,
+            f'Standard admixture: {self.hybrid_pop} = alpha {self.parent1_pop} + (1 - alpha) {self.parent2_pop}',
+            f"f4({self.parent1_pop}, {self.parent2_pop}; i, j)",
+            f"f4({self.hybrid_pop}, {self.parent2_pop}; i, j)")
+
+        self.plot_histogram(self.alpha_ratio_hist,
+            f'{self.hybrid_pop} = alpha {self.parent1_pop} + (1 - alpha) {self.parent2_pop}',
+            'f4 ratio',
+            'Counts')
 
     # Get result data in text form
     def admixture_data(self):

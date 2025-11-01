@@ -74,7 +74,7 @@ class SelectPopsWidget(QWidget):
         self.num_procs_spin_box.setSizePolicy(QSizePolicy.Policy.Maximum, QSizePolicy.Policy.Preferred)
         self.num_procs_spin_box.setMinimum(1)
         self.num_procs_spin_box.setMaximum(9999)
-        self.num_procs_spin_box.valueChanged.connect(self.core.set_num_procs)
+        self.num_procs_spin_box.valueChanged.connect(self.set_num_procs)
         self.num_procs_spin_box.setValue(1)
 
         # Compute allele frequencies files button
@@ -87,7 +87,7 @@ class SelectPopsWidget(QWidget):
         self.stop_button = QPushButton('Stop computation')
         self.stop_button.setSizePolicy(QSizePolicy.Policy.Maximum, QSizePolicy.Policy.Preferred)
         self.stop_button.setEnabled(False)
-        self.stop_button.clicked.connect(self.core.stop_computation)
+        self.stop_button.clicked.connect(self.stop_computation)
 
         # Progress bar
         self.progress_bar = QProgressBar()
@@ -189,6 +189,10 @@ class SelectPopsWidget(QWidget):
 
         self.comp_button.setEnabled(len(pops) > 0)
 
+    @Slot(int)
+    def set_num_procs(self, procs):
+        self.core.set_num_procs(procs)
+
     @Slot(str, str, int)
     def log_progress(self, key, message, line_num):
         self.log.set_entry(key, message, line_num)
@@ -216,6 +220,10 @@ class SelectPopsWidget(QWidget):
         worker.signals.finished.connect(self.computation_finished)
 
         self.thread_pool.start(worker)
+
+    @Slot()
+    def stop_computation(self):
+        self.core.stop_computation()
 
     @Slot()
     def save_frequencies(self):

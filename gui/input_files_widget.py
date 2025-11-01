@@ -18,6 +18,7 @@ from gui.log_system import LogSystem
 from gui.select_file_widget import SelectFileWidget
 from gui.worker import Worker
 from gui.about_dialog import AboutDialog
+from gui.input_files_checker import InputFilesChecker
 
 from PySide6.QtCore import Qt, Signal, Slot, QThreadPool, QSize
 from PySide6.QtWidgets import QWidget, QPushButton, QSizePolicy, QGroupBox, QVBoxLayout, QHBoxLayout
@@ -33,7 +34,10 @@ class InputFilesWidget(QWidget):
 
         # Core
         self.core = core
-        self.core.file_path_set.connect(self.log_file_path)
+
+        # File checker
+        self.input_files_checker = InputFilesChecker(core)
+        self.input_files_checker.file_path_set.connect(self.log_file_path)
 
         # Thread pool
         self.thread_pool = QThreadPool()
@@ -60,10 +64,10 @@ class InputFilesWidget(QWidget):
         self.snp_file_widget = SelectFileWidget('Select .snp file', '(*.snp)', stylesheet_11)
         self.pops_file_widget = SelectFileWidget('Select populations file', None, stylesheet_21)
 
-        self.geno_file_widget.file_path_selected.connect(self.core.set_geno_file_path)
-        self.ind_file_widget.file_path_selected.connect(self.core.set_ind_file_path)
-        self.snp_file_widget.file_path_selected.connect(self.core.set_snp_file_path)
-        self.pops_file_widget.file_path_selected.connect(self.core.set_pops_file_path)
+        self.geno_file_widget.file_path_selected.connect(self.input_files_checker.set_geno_file_path)
+        self.ind_file_widget.file_path_selected.connect(self.input_files_checker.set_ind_file_path)
+        self.snp_file_widget.file_path_selected.connect(self.input_files_checker.set_snp_file_path)
+        self.pops_file_widget.file_path_selected.connect(self.input_files_checker.set_pops_file_path)
 
         # Check files button
         self.check_button = QPushButton('Parse and check files')
@@ -71,13 +75,13 @@ class InputFilesWidget(QWidget):
         self.check_button.setSizePolicy(QSizePolicy.Policy.Maximum, QSizePolicy.Policy.Maximum)
         self.check_button.setStyleSheet(stylesheet_12)
         self.check_button.setEnabled(False)
-        self.core.input_file_paths_state.connect(self.check_button.setEnabled)
+        self.input_files_checker.input_file_paths_state.connect(self.check_button.setEnabled)
         self.check_button.clicked.connect(self.check_input_files)
 
         # Check error
-        self.core.geno_file_error.connect(self.geno_check_failed)
-        self.core.ind_file_error.connect(self.ind_check_failed)
-        self.core.snp_file_error.connect(self.snp_check_failed)
+        self.input_files_checker.geno_file_error.connect(self.geno_check_failed)
+        self.input_files_checker.ind_file_error.connect(self.ind_check_failed)
+        self.input_files_checker.snp_file_error.connect(self.snp_check_failed)
 
         # Parse selected pops file button
         self.parse_pops_button = QPushButton('Load selected populations')
@@ -85,11 +89,11 @@ class InputFilesWidget(QWidget):
         self.parse_pops_button.setSizePolicy(QSizePolicy.Policy.Maximum, QSizePolicy.Policy.Maximum)
         self.parse_pops_button.setStyleSheet(stylesheet_22)
         self.parse_pops_button.setEnabled(False)
-        self.core.pops_file_path_state.connect(self.parse_pops_button.setEnabled)
+        self.input_files_checker.pops_file_path_state.connect(self.parse_pops_button.setEnabled)
         self.parse_pops_button.clicked.connect(self.parse_pops_file)
 
         # Parse error
-        self.core.parsed_pops_error.connect(self.pops_check_failed)
+        self.input_files_checker.parsed_pops_error.connect(self.pops_check_failed)
 
         # Required files buttons group box
         req_group_box = QGroupBox('Required files')
@@ -143,7 +147,7 @@ class InputFilesWidget(QWidget):
         self.worker_finished[worker_name] = True
 
         if all([status for name, status in self.worker_finished.items()]):
-            if self.core.check_input_files():
+            if self.input_files_checker.check_input_files():
                 self.log.set_entry('main', 'Checking finished.')
                 self.log.append_entry('check', 'Parsed input files seem to have a valid structure.')
 
@@ -198,7 +202,7 @@ class InputFilesWidget(QWidget):
 
     @Slot(list)
     def pops_check_failed(self, missing_pops):
-        self.log.set_entry('pops', f'Error: The following populations are missing from .ind file and were unselected: {','.join(missing_pops)}')
+        self.log.set_entry('pops', f'Error: The following populations are missing from .ind file and were deselected: {','.join(missing_pops)}')
         self.parsed_pops_changed.emit()
 
     @Slot()
