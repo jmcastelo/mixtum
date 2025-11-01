@@ -705,9 +705,7 @@ class Core:
         return text
 
     # Save frequencies
-    def save_population_allele_frequencies(self, file_path_str):
-        file_path = Path(file_path_str)
-
+    def save_population_allele_frequencies(self, file_path):
         with file_path.open(mode='w', encoding='utf-8') as file:
             pops_width = max([len(name) for name in self.selected_pops])
             prec = 6
@@ -724,9 +722,7 @@ class Core:
                 file.write(row_format.format(*row) + '\n')
 
     # Save f4 points
-    def save_f4_points(self, file_path_str):
-        file_path = Path(file_path_str)
-
+    def save_f4_points(self, file_path):
         with file_path.open(mode = 'w', encoding = 'utf-8') as file:
             aux_pops_width = max([len(name) for name in self.aux_pops_computed])
             prec = 6
@@ -746,9 +742,7 @@ class Core:
                     index += 1
 
     # Save results
-    def save_admixture_data(self, file_path_str):
-        file_path = Path(file_path_str)
-
+    def save_admixture_data(self, file_path):
         with file_path.open(mode = 'w', encoding = 'utf-8') as file:
             num_aux_pops = len(self.aux_pops_computed)
             num_aux_pairs = int(num_aux_pops * (num_aux_pops - 1) / 2)
@@ -768,9 +762,7 @@ class Core:
             file.write('\n'.join(self.aux_pops_computed))
 
     # Save PCA data
-    def save_pca_data(self, file_path_str):
-        file_path = Path(file_path_str)
-
+    def save_pca_data(self, file_path):
         prec = 6
         col_width = prec + 7
         row_format = ' '.join([f'{{{i}: {col_width}.{prec}E}}' for i in range(6)])

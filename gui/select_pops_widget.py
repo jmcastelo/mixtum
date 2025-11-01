@@ -18,6 +18,8 @@ from gui.log_system import LogSystem
 from gui.searchable_table_widget import SearchableTableWidget
 from gui.worker import Worker
 
+from pathlib import Path
+
 from PySide6.QtCore import Qt, Signal, Slot, QThreadPool
 from PySide6.QtWidgets import QWidget, QTableWidget, QTableWidgetItem, QPushButton, QSizePolicy, QFrame, QSpinBox
 from PySide6.QtWidgets import QProgressBar, QVBoxLayout, QHBoxLayout, QFormLayout, QGroupBox, QHeaderView, QFileDialog
@@ -234,4 +236,4 @@ class SelectPopsWidget(QWidget):
         if dialog.exec():
             file_names = dialog.selectedFiles()
             file_path = file_names[0]
-            self.core.save_population_allele_frequencies(file_path)
+            self.core.save_population_allele_frequencies(Path(file_path))

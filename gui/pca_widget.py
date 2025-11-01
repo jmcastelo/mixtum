@@ -16,6 +16,8 @@
 
 from gui.plots import Plot
 
+from pathlib import Path
+
 from PySide6.QtCore import Qt, Slot
 from PySide6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QTableWidget, QHeaderView, QPushButton, QSizePolicy
 from PySide6.QtWidgets import QTableWidgetItem, QTabWidget, QFileDialog
@@ -182,4 +184,4 @@ class PCAWidget(QWidget):
         if dialog.exec():
             file_names = dialog.selectedFiles()
             file_path = file_names[0]
-            self.core.save_pca_data(file_path)
+            self.core.save_pca_data(Path(file_path))

@@ -37,19 +37,21 @@ def check_dir_path(dir_path):
 
 class Helper():
     def __init__(self, core):
-        # Core
         self.core = core
-
         self.input_files_messages = { 'geno': '', 'ind': '', 'snp': '', 'pops': '' }
+        self.output_path = None
 
     def print_input_files_progress(self, key, message):
         self.input_files_messages[key] = message
 
-    def print_computation_progress(self, *args):
+    def print_freqs_computation_progress(self, *args):
         if len(args) == 1 and isinstance(args[0], int):
             print(f'{100 * args[0] / len(self.core.selected_pops):.2f}%')
         elif len(args) == 3 and isinstance(args[0], str) and isinstance(args[1], str) and isinstance(args[2], int):
             print(args[1])
+
+    def print_computation_progress(self, index):
+        print(f'{100 * index / 9.0:.2f}%')
 
     def run(self):
         print(f'Mixtum v{self.core.version}\n')
@@ -66,6 +68,8 @@ class Helper():
         self.compute_frequencies()
 
         self.compute_results()
+
+        self.save_output_files()
 
     def check_input_files(self):
         self.core.geno_table_shape(self.print_input_files_progress)
@@ -95,50 +99,13 @@ class Helper():
             print(f'Error: The following populations are missing from .ind file and were deselected: {','.join(missing_pops)}')
 
     def compute_frequencies(self):
-        self.core.parallel_compute_populations_frequencies(self.print_computation_progress)
+        self.core.parallel_compute_populations_frequencies(self.print_freqs_computation_progress)
 
     def compute_results(self):
-        print('\nComputing...')
+        print('\nComputing admixture...')
 
         self.core.init_admixture_model()
-
-        n = 1
-        ntotal = 9
-
-        print(f"({n}/{ntotal}) Mixing coefficient pre-jl")
-        self.core.mixing_coefficient_pre_jl()
-        n += 1
-
-        print(f"({n}/{ntotal}) Admixture angle pre-jl")
-        self.core.admixture_angle_pre_jl()
-        n += 1
-
-        print(f"({n}/{ntotal}) f3")
-        self.core.f3()
-        n += 1
-
-        print(f"({n}/{ntotal}) f4'")
-        self.core.f4_prime()
-        n += 1
-
-        print(f"({n}/{ntotal}) Alpha'")
-        self.core.alpha_prime()
-        n += 1
-
-        print(f"({n}/{ntotal}) f4-standard")
-        self.core.f4_std()
-        n += 1
-
-        print(f"({n}/{ntotal}) Alpha-standard")
-        self.core.alpha_standard()
-        n += 1
-
-        print(f"({n}/{ntotal}) Admixture angle post-jl")
-        self.core.admixture_angle_post_jl()
-        n += 1
-
-        print(f"({n}/{ntotal}) f4-ratio")
-        self.core.f4_ratio()
+        self.core.compute_results(self.print_computation_progress)
 
         print('\nResults:')
         print(self.core.admixture_data())
@@ -146,6 +113,14 @@ class Helper():
     def plot(self):
         self.core.plot()
 
+    def set_output_dir(self, dir_name):
+        self.output_path = Path(dir_name)
+        check_dir_path(self.output_path)
+
+    def save_output_files(self):
+        self.core.save_population_allele_frequencies(self.output_path.joinpath(Path('frequencies.dat')))
+        self.core.save_f4_points(self.output_path.joinpath(Path('f4.dat')))
+        self.core.save_admixture_data(self.output_path.joinpath(Path('admixture.dat')))
 
 if __name__ == '__main__':
     core = Core()
@@ -167,13 +142,11 @@ if __name__ == '__main__':
     ind_file_path = Path(args.ind)
     snp_file_path = Path(args.snp)
     pops_file_path = Path(args.pops)
-    out_dir_path = Path(args.outdir)
 
     check_file_path(geno_file_path)
     check_file_path(ind_file_path)
     check_file_path(snp_file_path)
     check_file_path(pops_file_path)
-    check_dir_path(out_dir_path)
 
     core.set_num_procs(num_procs)
 
@@ -183,6 +156,8 @@ if __name__ == '__main__':
     core.set_pops_file_path(args.pops)
 
     helper = Helper(core)
+
+    helper.set_output_dir(args.outdir)
 
     helper.run()
 

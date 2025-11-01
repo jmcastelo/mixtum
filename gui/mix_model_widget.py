@@ -19,6 +19,8 @@ from gui.open_widget import OpenWidget
 from gui.plots import Plot
 from gui.worker import Worker
 
+from pathlib import Path
+
 from PySide6.QtCore import Qt, Slot, QThreadPool
 from PySide6.QtWidgets import QWidget, QTableWidget, QGroupBox, QStackedLayout, QLabel, QSpinBox, QFormLayout
 from PySide6.QtWidgets import QAbstractItemView, QTableWidgetItem, QPushButton, QSizePolicy, QProgressBar, QHBoxLayout
@@ -378,7 +380,7 @@ class MixModelWidget(QWidget):
         if dialog.exec():
             file_names = dialog.selectedFiles()
             file_path = file_names[0]
-            self.core.save_f4_points(file_path)
+            self.core.save_f4_points(Path(file_path))
 
     @Slot()
     def save_results(self):
@@ -389,7 +391,7 @@ class MixModelWidget(QWidget):
         if dialog.exec():
             file_names = dialog.selectedFiles()
             file_path = file_names[0]
-            self.core.save_admixture_data(file_path)
+            self.core.save_admixture_data(Path(file_path))
 
     @Slot(int)
     def set_prime_sel_pops_label(self, index):
