@@ -131,13 +131,11 @@ class Core:
                 row = row.rstrip()
                 self.num_geno_cols.append(len(row))
                 if self.num_geno_rows % 1000 == 0:
-                    # progress_callback[str, str].emit('geno', f'Number of rows in .geno: {self.num_geno_rows}')
                     progress_callback('geno', f'Number of rows: {self.num_geno_rows}')
                 self.num_geno_rows += 1
 
         self.num_alleles = self.num_geno_rows
 
-        # progress_callback[str, str].emit('geno', f'Number of rows in .geno: {self.num_geno_rows}')
         progress_callback('geno', f'Number of rows: {self.num_geno_rows}')
 
         return True
@@ -149,7 +147,6 @@ class Core:
 
         with self.ind_file_path.open(mode = 'r', encoding = 'utf-8') as file:
             for index, row in enumerate(file):
-                # progress_callback[str, str].emit('ind', f'Number of rows in .ind: {self.num_ind_rows}')
                 progress_callback('ind', f'Number of rows: {self.num_ind_rows}')
 
                 columns = row.split()
@@ -164,7 +161,6 @@ class Core:
 
         self.avail_pops = list(self.avail_pops_indices.keys())
 
-        # progress_callback[str, str].emit('ind', f'Number of rows in .ind: {self.num_ind_rows}')
         progress_callback('ind', f'Number of rows: {self.num_ind_rows}')
 
         return True
@@ -180,11 +176,9 @@ class Core:
                 self.snp_names.append(columns[0])
 
                 if self.num_snp_rows % 1000 == 0:
-                    # progress_callback[str, str].emit('snp', f'Number of rows in .snp: {self.num_snp_rows}')
                     progress_callback('snp', f'Number of rows: {self.num_snp_rows}')
                 self.num_snp_rows += 1
 
-        # progress_callback[str, str].emit('snp', f'Number of rows in .snp: {self.num_snp_rows}')
         progress_callback('snp', f'Number of rows: {self.num_snp_rows}')
 
         return True
@@ -209,7 +203,6 @@ class Core:
                 self.parsed_pops.append(columns[0])
 
                 num_pops += 1
-                # progress_callback[str, str].emit('pops', f'Number of pops: {num_pops}')
                 progress_callback('pops', f'Number of pops: {num_pops}')
 
         return True
@@ -257,9 +250,6 @@ class Core:
 
         allele_freqs = [ctx.Array('d', self.num_alleles) for i in range(num_sel_pops)]
 
-        # progress_callback[int].emit(0)
-        # progress_callback[str, str, int].emit('main', f'Computing {self.num_alleles} frequencies per population for {num_sel_pops} populations in {batch_size} batches of {self.num_procs} parallel processes...', 0)
-
         progress_callback('main', f'Computing {self.num_alleles} frequencies per population for {num_sel_pops} populations in {batch_size} batches of {self.num_procs} parallel processes...', 0)
         progress_callback(0)
 
@@ -281,7 +271,6 @@ class Core:
                 else:
                     break
 
-            # progress_callback[str, str, int].emit('progress', 'Computing populations: ' + ' '.join(computing_pops), 0)
             progress_callback('progress', 'Computing populations: ' + ' '.join(computing_pops), 0)
 
             for p in procs:
@@ -297,28 +286,16 @@ class Core:
             num_remaining_indices = sum([len(indices) for indices in pop_indices[index:]])
             estimated_remaining_time = num_remaining_indices * elapsed_time_per_index
 
-            # progress_callback[str, str, int].emit('timing', f'Estimated remaining time: {self.time_format(estimated_remaining_time)}', 0)
-            # progress_callback[str, str, int].emit('timing', f'Elapsed time: {self.time_format(elapsed_time)}', 1)
-            # progress_callback[int].emit(index)
-
             progress_callback('timing', f'Estimated remaining time: {self.time_format(estimated_remaining_time)}', 0)
             progress_callback('timing', f'Elapsed time: {self.time_format(elapsed_time)}', 1)
             progress_callback(index)
 
         if event.is_set():
-            # progress_callback[str, str, int].emit('main', 'Computation stopped!', 0)
-            # progress_callback[str, str, int].emit('progress', 'Allele frequencies unchanged from previous computation.', 0)
-            # progress_callback[str, str, int].emit('timing', '', 0)
-
             progress_callback('main', 'Computation stopped!', 0)
             progress_callback('progress', 'Allele frequencies unchanged from previous computation.', 0)
             progress_callback('timing', '', 0)
 
             return False
-
-        # progress_callback[str, str, int].emit('main', 'Computation finished.', 0)
-        # progress_callback[str, str, int].emit('progress', '', 0)
-        # progress_callback[str, str, int].emit('check', 'Checking and removing invalid SNPs...', 0)
 
         progress_callback('main', 'Computation finished.', 0)
         progress_callback('progress', '', 0)
@@ -330,9 +307,6 @@ class Core:
         valid_allele_freqs = []
         for i in range(len(allele_freqs)):
             valid_allele_freqs.append(np.delete(allele_freqs[i], invalid_indices))
-
-        # progress_callback[str, str, int].emit('check', 'Checking SNPs finished.', 0)
-        # progress_callback[str, str, int].emit('check', f'Number of excluded SNPs: {len(invalid_indices)}', 1)
 
         progress_callback('check', 'Checking SNPs finished.', 0)
         progress_callback('check', f'Number of excluded SNPs: {len(invalid_indices)}', 1)
@@ -604,42 +578,31 @@ class Core:
 
     # Compute all results
     def compute_results(self, progress_callback):
-        # progress_callback[int].emit(0)
         progress_callback(0)
         self.mixing_coefficient_pre_jl()
-        # progress_callback[int].emit(1)
         progress_callback(1)
         self.admixture_angle_pre_jl()
-        # progress_callback[int].emit(2)
         progress_callback(2)
         self.f3()
-        # progress_callback[int].emit(3)
         progress_callback(3)
         self.f4_prime()
-        # progress_callback[int].emit(4)
         progress_callback(4)
         self.alpha_prime()
-        # progress_callback[int].emit(5)
         progress_callback(5)
         self.f4_std()
-        # progress_callback[int].emit(6)
         progress_callback(6)
         self.alpha_standard()
-        # progress_callback[int].emit(7)
         progress_callback(7)
         self.admixture_angle_post_jl()
-        # progress_callback[int].emit(8)
         progress_callback(8)
         self.f4_ratio()
-        # progress_callback[int].emit(9)
         progress_callback(9)
 
         self.aux_pops_computed = self.aux_pops
 
         return True
 
-    # Ploat a fit
-
+    # Plot a fit
     def plot_fit(self, x, y, alpha, title, xlabel, ylabel):
         fig, ax = plt.subplots()
 
@@ -654,7 +617,6 @@ class Core:
         plt.show()
 
     # Plot a histogram
-
     def plot_histogram(self, histogram, title, xlabel, ylabel):
         counts = histogram[0]
         edges = histogram[1]
