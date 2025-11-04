@@ -107,6 +107,9 @@ class Helper():
         self.core.init_admixture_model()
         self.core.compute_results(self.print_computation_progress)
 
+        if self.core.bootstrap:
+            self.core.compute_bootstrap()
+
         print('\nResults:')
         print(self.core.admixture_data())
 
@@ -122,6 +125,10 @@ class Helper():
         self.core.save_f4_points(self.output_path.joinpath(Path('f4.dat')))
         self.core.save_admixture_data(self.output_path.joinpath(Path('admixture.dat')))
 
+    def set_bootstrap(self, bootstrap):
+        if bootstrap:
+            self.core.bootstrap = True
+
 if __name__ == '__main__':
     core = Core()
 
@@ -129,9 +136,10 @@ if __name__ == '__main__':
     parser.add_argument('--geno', type = str, required = True, help = 'Path of .geno file')
     parser.add_argument('--ind', type = str, required = True, help = 'Path of .ind file')
     parser.add_argument('--snp', type = str, required = True, help = 'Path of .snp file')
-    parser.add_argument('--pops', type = str, required = True, help = 'Path of selected populations file')
+    parser.add_argument('--pops', type = str, required = True, help = 'Path of selected populations file (1st row = hybrid, 2nd & 3rd rows = parents, next rows = aux pops)')
     parser.add_argument('--outdir', type = str, required = True, help = 'Path of output dir')
-    parser.add_argument('--nprocs', type = int, default = 1, help = 'Number of parallel computation processes (default 1)')
+    parser.add_argument('--nprocs', type = int, default = 1, help = 'Number of parallel computation processes (default %(default)s)')
+    parser.add_argument('--bootstrap', action=argparse.BooleanOptionalAction, help = 'Perform bootstrap')
     parser.add_argument('--plot', action=argparse.BooleanOptionalAction, help='Plot fits and histogram')
 
     args = parser.parse_args()
@@ -158,6 +166,7 @@ if __name__ == '__main__':
     helper = Helper(core)
 
     helper.set_output_dir(args.outdir)
+    helper.set_bootstrap(args.bootstrap)
 
     helper.run()
 

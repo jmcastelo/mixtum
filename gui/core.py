@@ -109,6 +109,10 @@ class Core:
         self.explained_variance = []
         self.pca_eigenvalues = []
 
+        self.bootstrap = False
+        self.std_dev_alpha = 0
+        self.std_dev_angle = 0
+
     def set_geno_file_path(self, file_path):
         self.geno_file_path = Path(file_path)
 
@@ -383,12 +387,12 @@ class Core:
         self.f3_test = np.dot(self.allele_frequencies[self.hybrid_pop] - self.allele_frequencies[self.parent1_pop], self.allele_frequencies[self.hybrid_pop] - self.allele_frequencies[self.parent2_pop]) / num_alleles
 
     # Computation of f4 prime
-    def f4_prime(self):
-        num_aux_pops = len(self.aux_pops)
+    def f4_prime(self, aux_pops):
+        num_aux_pops = len(aux_pops)
         num_pairs = int(num_aux_pops * (num_aux_pops - 1) / 2)
 
-        self.f4ab_prime = np.zeros(num_pairs)
-        self.f4xb_prime = np.zeros(num_pairs)
+        f4ab_prime = np.zeros(num_pairs)
+        f4xb_prime = np.zeros(num_pairs)
 
         ab = self.allele_frequencies[self.parent1_pop] - self.allele_frequencies[self.parent2_pop]
         xb = self.allele_frequencies[self.hybrid_pop] - self.allele_frequencies[self.parent2_pop]
@@ -397,11 +401,13 @@ class Core:
 
         for i in range(num_aux_pops):
             for j in range(i + 1, num_aux_pops):
-                ij = self.allele_frequencies[self.aux_pops[i]] - self.allele_frequencies[self.aux_pops[j]]
+                ij = self.allele_frequencies[aux_pops[i]] - self.allele_frequencies[aux_pops[j]]
                 norm_ij = np.linalg.norm(ij)
-                self.f4ab_prime[index] = np.dot(ab, ij) / norm_ij
-                self.f4xb_prime[index] = np.dot(xb, ij) / norm_ij
+                f4ab_prime[index] = np.dot(ab, ij) / norm_ij
+                f4xb_prime[index] = np.dot(xb, ij) / norm_ij
                 index += 1
+
+        return f4ab_prime, f4xb_prime
 
     # Computation of f4 standard
     def f4_std(self):
@@ -475,8 +481,8 @@ class Core:
         self.alpha_std, self.alpha_std_error = self.least_squares(self.f4ab_std, self.f4xb_std)
 
     # Computation of admixture angle post JL
-    def admixture_angle_post_jl(self):
-        num_aux_pops = len(self.aux_pops)
+    def admixture_angle_post_jl(self, aux_pops):
+        num_aux_pops = len(aux_pops)
 
         xa = self.allele_frequencies[self.hybrid_pop] - self.allele_frequencies[self.parent1_pop]
         xb = self.allele_frequencies[self.hybrid_pop] - self.allele_frequencies[self.parent2_pop]
@@ -487,7 +493,7 @@ class Core:
 
         for i in range(num_aux_pops):
             for j in range(i + 1, num_aux_pops):
-                ij = self.allele_frequencies[self.aux_pops[i]] - self.allele_frequencies[self.aux_pops[j]]
+                ij = self.allele_frequencies[aux_pops[i]] - self.allele_frequencies[aux_pops[j]]
 
                 xaij = np.dot(xa, ij)
                 xbij = np.dot(xb, ij)
@@ -497,9 +503,10 @@ class Core:
                 sum2 += (xaij ** 2) / ijij
                 sum3 += (xbij ** 2) / ijij
 
-        self.cosine_post_jl = sum1 / np.sqrt(sum2 * sum3)
-        self.angle_post_jl = np.arccos(self.cosine_post_jl) * 180 / np.pi
-        self.percentage_post_jl = np.arccos(self.cosine_post_jl) / np.pi
+        cosine_post_jl = sum1 / np.sqrt(sum2 * sum3)
+        angle_post_jl = np.arccos(cosine_post_jl)
+
+        return cosine_post_jl, angle_post_jl
 
     # Computation of f4-ratio
     def f4_ratio(self):
@@ -522,7 +529,7 @@ class Core:
 
         alpha_01 = self.alpha_ratio[(self.alpha_ratio >= 0) & (self.alpha_ratio <= 1)]
         self.alpha_ratio_avg = np.average(alpha_01)
-        self.alpha_ratio_std_dev = np.std(alpha_01, dtype='d') * 1.96
+        self.alpha_ratio_std_dev = np.std(alpha_01, dtype='d') * 1.98
         self.alpha_ratio_hist = np.histogram(self.alpha_ratio, self.alpha_ratio_hist_bins)
         self.num_cases = alpha_01.size
 
@@ -579,28 +586,73 @@ class Core:
     # Compute all results
     def compute_results(self, progress_callback):
         progress_callback(0)
+
         self.mixing_coefficient_pre_jl()
         progress_callback(1)
+
         self.admixture_angle_pre_jl()
         progress_callback(2)
+
         self.f3()
         progress_callback(3)
-        self.f4_prime()
+
+        self.f4ab_prime, self.f4xb_prime = self.f4_prime(self.aux_pops)
         progress_callback(4)
+
         self.alpha_prime()
         progress_callback(5)
+
         self.f4_std()
         progress_callback(6)
+
         self.alpha_standard()
         progress_callback(7)
-        self.admixture_angle_post_jl()
+
+        self.cosine_post_jl, self.angle_post_jl = self.admixture_angle_post_jl(self.aux_pops)
+        self.angle_post_jl *= 180 / np.pi
+        self.percentage_post_jl = np.arccos(self.cosine_post_jl) / np.pi
         progress_callback(8)
+
         self.f4_ratio()
         progress_callback(9)
 
         self.aux_pops_computed = self.aux_pops
 
         return True
+
+    def compute_bootstrap(self):
+        num_aux_pops = len(self.aux_pops)
+        num_its = int(num_aux_pops * (num_aux_pops * 0.5 - 1) * 0.25)
+        # num_its_ja = int(np.ceil(num_aux_pops / 2) * (np.ceil(num_aux_pops / 2) - 1) / 2)
+        if num_its > 50: num_its = 50
+        print('num_its', num_its)
+
+        num_bootstrap_pops = int(num_aux_pops / 2)
+        print('num_bootstrap_pops', num_bootstrap_pops)
+
+        std_dev_alpha = 0
+        std_dev_angle = 0
+
+        for it in range(num_its):
+            bootstrap_pops = np.random.choice(self.aux_pops, num_bootstrap_pops, replace=False)
+            print(bootstrap_pops)
+
+            f4ab_prime, f4xb_prime = self.f4_prime(bootstrap_pops)
+            alpha, alpha_error = self.least_squares(f4ab_prime, f4xb_prime)
+            std_dev_alpha += (alpha - self.alpha) ** 2
+
+            cosine, angle = self.admixture_angle_post_jl(bootstrap_pops)
+            angle *= 180 / np.pi
+            std_dev_angle += (angle - self.angle_post_jl) ** 2
+
+        std_dev_alpha = np.sqrt(std_dev_alpha / num_its)
+        std_dev_angle = np.sqrt(std_dev_angle / num_its)
+
+        self.std_dev_alpha = 1.98 * std_dev_alpha
+        self.std_dev_angle = 1.98 * std_dev_angle
+
+        print('std_dev_alpha', self.std_dev_alpha)
+        print('std_dev_angle', self.std_dev_angle)
 
     # Plot a fit
     def plot_fit(self, x, y, alpha, title, xlabel, ylabel):
