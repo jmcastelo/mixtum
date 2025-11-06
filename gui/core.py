@@ -759,21 +759,23 @@ class Core:
     # Save results
     def save_admixture_data(self, file_path):
         with file_path.open(mode = 'w', encoding = 'utf-8') as file:
-            num_aux_pops = len(self.aux_pops_computed)
-            num_aux_pairs = int(num_aux_pops * (num_aux_pops - 1) / 2)
+            # num_aux_pops = len(self.aux_pops_computed)
+            # num_aux_pairs = int(num_aux_pops * (num_aux_pops - 1) / 2)
 
-            file.write(f'Admixture model: {self.hybrid_pop} = {self.parent1_pop} + {self.parent2_pop}\n')
-            file.write(f'SNPs employed: {self.num_valid_alleles} / {self.num_alleles}\n')
-            file.write(f'Auxiliary populations: {num_aux_pops}\n')
-            file.write(f'Auxiliary pairs: {num_aux_pairs}\n')
-            file.write(f'Cos pre-JL:  {self.cosine_pre_jl:7.4f} ---> Angle pre-JL:  {self.angle_pre_jl:7.2f} deg vs 180 deg: {self.percentage_pre_jl:.1%}\n')
-            file.write(f'Cos post-JL: {self.cosine_post_jl:7.4f} ---> Angle post-JL: {self.angle_post_jl:7.2f} deg vs 180 deg: {self.percentage_post_jl:.1%}\n')
-            file.write(f'Alpha pre-JL:     {self.alpha_pre_jl:6.4f}\n')
-            file.write(f'Alpha post-JL:    {self.alpha:6.4f} +/- {self.alpha_error:6.4f} (95% CI) (f4-prime, renormalized)\n')
-            file.write(f'Alpha NR post-JL: {self.alpha_std:6.4f} +/- {self.alpha_std_error:6.4f} (95% CI) (f4, standard)\n')
-            file.write(f'f4-ratio average if [0, 1]: {self.alpha_ratio_avg:6.4f} +/- {self.alpha_ratio_std_dev:6.4f} (95% CI), {self.num_cases} cases\n')
-            file.write(f'Standard admixture test: f3(parent1, parent2; hybrid) < 0 ? {self.f3_test:8.6f}\n')
-            file.write('Auxiliary population names:\n')
+            # file.write(f'Admixture model: {self.hybrid_pop} = {self.parent1_pop} + {self.parent2_pop}\n')
+            # file.write(f'SNPs employed: {self.num_valid_alleles} / {self.num_alleles}\n')
+            # file.write(f'Auxiliary populations: {num_aux_pops}\n')
+            # file.write(f'Auxiliary pairs: {num_aux_pairs}\n')
+            # file.write(f'Cos pre-JL:  {self.cosine_pre_jl:7.4f} ---> Angle pre-JL:  {self.angle_pre_jl:7.2f} deg vs 180 deg: {self.percentage_pre_jl:.1%}\n')
+            # file.write(f'Cos post-JL: {self.cosine_post_jl:7.4f} ---> Angle post-JL: {self.angle_post_jl:7.2f} deg vs 180 deg: {self.percentage_post_jl:.1%}\n')
+            # file.write(f'Alpha pre-JL:     {self.alpha_pre_jl:6.4f}\n')
+            # file.write(f'Alpha post-JL:    {self.alpha:6.4f} +/- {self.alpha_error:6.4f} (95% CI) (f4-prime, renormalized)\n')
+            # file.write(f'Alpha NR post-JL: {self.alpha_std:6.4f} +/- {self.alpha_std_error:6.4f} (95% CI) (f4, standard)\n')
+            # file.write(f'f4-ratio average if [0, 1]: {self.alpha_ratio_avg:6.4f} +/- {self.alpha_ratio_std_dev:6.4f} (95% CI), {self.num_cases} cases\n')
+            # file.write(f'Standard admixture test: f3(parent1, parent2; hybrid) < 0 ? {self.f3_test:8.6f}\n')
+
+            file.write(self.admixture_data())
+            file.write('\nAuxiliary population names:\n')
             file.write('\n'.join(self.aux_pops_computed))
 
     # Save PCA data
