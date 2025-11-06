@@ -41,6 +41,22 @@ class Helper():
         self.input_files_messages = { 'geno': '', 'ind': '', 'snp': '', 'pops': '' }
         self.output_path = None
 
+    def set_input_paths(self, geno_file_str, ind_file_str, snp_file_str, pops_file_str):
+        geno_file_path = Path(geno_file_str)
+        ind_file_path = Path(ind_file_str)
+        snp_file_path = Path(snp_file_str)
+        pops_file_path = Path(pops_file_str)
+
+        check_file_path(geno_file_path)
+        check_file_path(ind_file_path)
+        check_file_path(snp_file_path)
+        check_file_path(pops_file_path)
+
+        self.core.set_geno_file_path(args.geno)
+        self.core.set_ind_file_path(args.ind)
+        self.core.set_snp_file_path(args.snp)
+        self.core.set_pops_file_path(args.pops)
+
     def print_input_files_progress(self, key, message):
         self.input_files_messages[key] = message
 
@@ -53,7 +69,9 @@ class Helper():
     def print_computation_progress(self, index):
         print(f'{100 * index / 9.0:.2f}%')
 
-    def run(self):
+    def run(self, num_procs):
+        self.core.set_num_procs(num_procs)
+
         print(f'Mixtum v{self.core.version}\n')
         print('Parsing and checking input files...')
 
@@ -144,31 +162,13 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
-    num_procs = args.nprocs
-
-    geno_file_path = Path(args.geno)
-    ind_file_path = Path(args.ind)
-    snp_file_path = Path(args.snp)
-    pops_file_path = Path(args.pops)
-
-    check_file_path(geno_file_path)
-    check_file_path(ind_file_path)
-    check_file_path(snp_file_path)
-    check_file_path(pops_file_path)
-
-    core.set_num_procs(num_procs)
-
-    core.set_geno_file_path(args.geno)
-    core.set_ind_file_path(args.ind)
-    core.set_snp_file_path(args.snp)
-    core.set_pops_file_path(args.pops)
-
     helper = Helper(core)
 
+    helper.set_input_paths(args.geno, args.ind, args.snp, args.pops)
     helper.set_output_dir(args.outdir)
     helper.set_bootstrap(args.bootstrap)
 
-    helper.run()
+    helper.run(args.nprocs)
 
     if args.plot:
         helper.plot()
