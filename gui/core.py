@@ -689,10 +689,11 @@ class Core:
             f'Renormalized admixture: {self.hybrid_pop} = alpha {self.parent1_pop} + (1 - alpha) {self.parent2_pop}',
             f"f4'({self.parent1_pop}, {self.parent2_pop}; i, j)",
             f"f4'({self.hybrid_pop}, {self.parent2_pop}; i, j)")
-        self.plot_fit(self.f4ab_std, self.f4xb_std, self.alpha_std,
-            f'Standard admixture: {self.hybrid_pop} = alpha {self.parent1_pop} + (1 - alpha) {self.parent2_pop}',
-            f"f4({self.parent1_pop}, {self.parent2_pop}; i, j)",
-            f"f4({self.hybrid_pop}, {self.parent2_pop}; i, j)")
+
+        # self.plot_fit(self.f4ab_std, self.f4xb_std, self.alpha_std,
+        #     f'Standard admixture: {self.hybrid_pop} = alpha {self.parent1_pop} + (1 - alpha) {self.parent2_pop}',
+        #     f"f4({self.parent1_pop}, {self.parent2_pop}; i, j)",
+        #     f"f4({self.hybrid_pop}, {self.parent2_pop}; i, j)")
 
         self.plot_histogram(self.alpha_ratio_hist,
             f'{self.hybrid_pop} = alpha {self.parent1_pop} + (1 - alpha) {self.parent2_pop}',

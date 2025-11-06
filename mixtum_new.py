@@ -151,14 +151,14 @@ if __name__ == '__main__':
     core = Core()
 
     parser = argparse.ArgumentParser(description = f'Mixtum v{core.version}: The geometry of admixture in population genetics')
-    parser.add_argument('--geno', type = str, required = True, help = 'Path of .geno file')
-    parser.add_argument('--ind', type = str, required = True, help = 'Path of .ind file')
-    parser.add_argument('--snp', type = str, required = True, help = 'Path of .snp file')
-    parser.add_argument('--pops', type = str, required = True, help = 'Path of selected populations file (1st row = hybrid, 2nd & 3rd rows = parents, next rows = aux pops)')
-    parser.add_argument('--outdir', type = str, required = True, help = 'Path of output dir')
-    parser.add_argument('--nprocs', type = int, default = 1, help = 'Number of parallel computation processes (default %(default)s)')
-    parser.add_argument('--bootstrap', action=argparse.BooleanOptionalAction, help = 'Perform bootstrap')
-    parser.add_argument('--plot', action=argparse.BooleanOptionalAction, help='Plot fits and histogram')
+    parser.add_argument('--geno', type = str, required = True, help = 'path of .geno file')
+    parser.add_argument('--ind', type = str, required = True, help = 'path of .ind file')
+    parser.add_argument('--snp', type = str, required = True, help = 'path of .snp file')
+    parser.add_argument('--pops', type = str, required = True, help = 'path of selected populations file (1st row = hybrid, 2nd & 3rd rows = parents, next rows = aux pops)')
+    parser.add_argument('--outdir', type = str, required = True, help = 'path of output dir')
+    parser.add_argument('--nprocs', type = int, default = 1, help = 'number of parallel computation processes (default %(default)s)')
+    parser.add_argument('--bootstrap', action=argparse.BooleanOptionalAction, help = 'perform bootstrap')
+    parser.add_argument('--plot', action=argparse.BooleanOptionalAction, help='plot fits and histogram')
 
     args = parser.parse_args()
 
