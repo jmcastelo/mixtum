@@ -21,6 +21,7 @@ from multiprocessing import get_context
 from math import ceil, isclose
 import matplotlib.pyplot as plt
 
+
 ctx = get_context('spawn')
 
 event = ctx.Event()
@@ -48,6 +49,17 @@ def population_allele_frequencies(file_path, pop_indices, allele_freqs):
             if event.is_set():
                 break
 
+def population_allele_frequencies_packed(file_path, block_size, num_snp, pop_indices, allele_freqs):
+    with file_path.open(mode = 'rb') as file:
+        file.seek(block_size)
+        for index in range(num_snp):
+            block = file.read(block_size)
+            bits = np.unpackbits(np.frombuffer(block, dtype = 'uint8'))
+            alleles = 2 * bits[::2] + bits[1::2]
+            alleles[alleles == 3] = 9
+            allele_freqs[index] = allele_frequency([int(alleles[i]) for i in pop_indices])
+            if event.is_set():
+                break
 
 
 class Core:
@@ -58,6 +70,11 @@ class Core:
         self.ind_file_path = Path('')
         self.snp_file_path = Path('')
         self.pops_file_path = Path('')
+
+        self.geno_file_ascii = True
+        self.num_ind = 0
+        self.num_snp = 0
+        self.block_size = 48
 
         self.num_geno_rows = 0
         self.num_geno_cols = []
@@ -124,6 +141,28 @@ class Core:
 
     def set_pops_file_path(self, file_path):
         self.pops_file_path = Path(file_path)
+
+    def is_geno_file_ascii(self):
+        buffer = bytearray(64 * 1024)
+        with self.geno_file_path.open(mode = 'rb') as file:
+            n = file.readinto(buffer)
+            if not buffer[:n].isascii():
+                self.geno_file_ascii = False
+                return False
+        self.geno_file_ascii = True
+        return True
+
+    def read_geno_file_header(self):
+        with self.geno_file_path.open(mode = 'rb') as file:
+            header = file.read(20).split()
+            print(header)
+            if header[0] != b'GENO':
+                return False
+            self.num_ind = int(header[1])
+            self.num_snp = int(header[2])
+            self.num_alleles = self.num_snp
+            self.block_size = max(48, int(np.ceil(self.num_ind / 4)))
+            return True
 
     # Count number of rows and columns in .geno input file
     def geno_table_shape(self, progress_callback):
@@ -196,6 +235,12 @@ class Core:
     def check_snp_and_geno(self):
         return self.num_snp_rows == self.num_geno_rows
 
+    def check_ind_and_geno_packed(self):
+        return self.num_ind_rows == self.num_ind
+
+    def check_snp_and_geno_packed(self):
+        return self.num_snp_rows == self.num_snp
+
     # Parse input file containing selected populations
     def parse_selected_populations(self, progress_callback):
         self.parsed_pops = []
@@ -218,7 +263,6 @@ class Core:
             self.reset_pops()
             return missing_pops
         return []
-
 
     def append_pops(self, pops):
         new_pops = [pop for pop in pops if pop not in self.selected_pops]
@@ -266,7 +310,10 @@ class Core:
 
             for proc in range(self.num_procs):
                 if index < num_sel_pops:
-                    p = ctx.Process(target = population_allele_frequencies, args = (self.geno_file_path, pop_indices[index], allele_freqs[index]))
+                    if self.geno_file_ascii:
+                        p = ctx.Process(target = population_allele_frequencies, args = (self.geno_file_path, pop_indices[index], allele_freqs[index]))
+                    else:
+                        p = ctx.Process(target = population_allele_frequencies_packed, args = (self.geno_file_path, self.block_size, self.num_snp, pop_indices[index], allele_freqs[index]))
                     procs.append(p)
                     p.start()
                     computing_pops.append(self.selected_pops[index])
@@ -705,17 +752,21 @@ class Core:
         num_aux_pops = len(self.aux_pops)
         num_aux_pairs = int(num_aux_pops * (num_aux_pops - 1) / 2)
 
+        angle_bootstrap_error = f'+/- {self.std_dev_angle:5.2f} deg (bootstrap, 95% CI)' if self.bootstrap else 'deg'
+        alpha_bootstrap_error = f' +/- {self.std_dev_alpha:6.4f} (bootstrap, 95% CI)' if self.bootstrap else ''
+
         text = f'Admixture model: {self.hybrid_pop} = {self.parent1_pop} + {self.parent2_pop}\n'
-        text += f'SNPs employed: {self.num_valid_alleles} / {self.num_alleles}\n'
+        text += f'SNPs used: {self.num_valid_alleles} / {self.num_alleles}\n'
         text += f'Auxiliary populations: {num_aux_pops}\n'
         text += f'Auxiliary pairs: {num_aux_pairs}\n'
         text += f'Cos pre-JL:  {self.cosine_pre_jl:7.4f} ---> Angle pre-JL:  {self.angle_pre_jl:7.2f} deg vs 180 deg: {self.percentage_pre_jl:.1%}\n'
-        text += f'Cos post-JL: {self.cosine_post_jl:7.4f} ---> Angle post-JL: {self.angle_post_jl:7.2f} deg vs 180 deg: {self.percentage_post_jl:.1%}\n'
-        text += f'Alpha pre-JL:     {self.alpha_pre_jl:6.4f}\n'
-        text += f'Alpha post-JL:    {self.alpha:6.4f} +/- {self.alpha_error:6.4f} (95% CI) (f4-prime, renormalized)\n'
-        text += f'Alpha NR post-JL: {self.alpha_std:6.4f} +/- {self.alpha_std_error:6.4f} (95% CI) (f4, standard)\n'
-        text += f'f4-ratio average if [0, 1]: {self.alpha_ratio_avg:6.4f} +/- {self.alpha_ratio_std_dev:6.4f} (95% CI), {self.num_cases} cases\n'
-        text += f'Standard admixture test: f3(parent1, parent2; hybrid) < 0 ? {self.f3_test:8.6f}'
+        text += f'Cos post-JL: {self.cosine_post_jl:7.4f} ---> Angle post-JL: {self.angle_post_jl:7.2f} {angle_bootstrap_error} vs 180 deg: {self.percentage_post_jl:.1%}\n'
+        text += f'Alpha post-JL: {self.alpha:6.4f} +/- {self.alpha_error:6.4f} (fit, 95% CI){alpha_bootstrap_error}\n'
+        text += '---\nAdditional indices:\n'
+        text += f'Alpha pre-JL: {self.alpha_pre_jl:6.4f}\n'
+        text += f'Alpha (Non-Renormalized) post-JL: {self.alpha_std:6.4f} +/- {self.alpha_std_error:6.4f} (fit, 95% CI)\n'
+        text += f'f4-ratio average if in [0, 1]: {self.alpha_ratio_avg:6.4f} +/- {self.alpha_ratio_std_dev:6.4f} (95% CI), {self.num_cases} cases\n'
+        text += f'Standard admixture test: f3(donor1, donor2; admix) < 0 ? {self.f3_test:8.6f}'
 
         return text
 

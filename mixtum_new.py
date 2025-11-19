@@ -67,7 +67,9 @@ class Helper():
             print(args[1])
 
     def print_computation_progress(self, index):
-        print(f'{100 * index / 9.0:.2f}%')
+        # print(f'{100 * index / 9.0:.2f}%')
+        if index == 9:
+            print('Done.')
 
     def run(self, num_procs):
         self.core.set_num_procs(num_procs)
@@ -84,26 +86,38 @@ class Helper():
         print('Parsing and checking finished.\n')
 
         self.compute_frequencies()
-
         self.compute_results()
-
         self.save_output_files()
 
     def check_input_files(self):
-        self.core.geno_table_shape(self.print_input_files_progress)
+        geno_is_ascii = self.core.is_geno_file_ascii()
+        if geno_is_ascii:
+            self.core.geno_table_shape(self.print_input_files_progress)
+        elif not self.core.read_geno_file_header():
+            print('Error: unsupported .geno file format')
+            sys.exit(1)
+
         self.core.parse_ind_file(self.print_input_files_progress)
         self.core.parse_snp_file(self.print_input_files_progress)
 
         valid = True
-        if not self.core.check_geno_file():
-            print('Error in .geno file: not all rows have the same number of columns.')
-            valid = False
-        if not self.core.check_ind_and_geno():
-            print('Error: Number of populations in .ind file is not equal to number of columns in .geno file.')
-            valid = False
-        if not self.core.check_snp_and_geno():
-            print('Error: Number of alleles in .snp file is not equal to number of rows in .geno file.')
-            valid = False
+        if geno_is_ascii:
+            if not self.core.check_geno_file():
+                print('Error in .geno file: not all rows have the same number of columns.')
+                valid = False
+            if not self.core.check_ind_and_geno():
+                print('Error: number of populations in .ind file is not equal to number of columns in .geno file.')
+                valid = False
+            if not self.core.check_snp_and_geno():
+                print('Error: number of alleles in .snp file is not equal to number of rows in .geno file.')
+                valid = False
+        else:
+            if not self.core.check_ind_and_geno_packed():
+                print('Error: mismatch in number of populations in .ind and .geno files.')
+                valid = False
+            if not self.core.check_snp_and_geno_packed():
+                print('Error: mismatch in number of alleles in .snp and .geno files.')
+                valid = False
 
         if not valid:
             sys.exit(1)
