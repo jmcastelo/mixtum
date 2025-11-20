@@ -40,6 +40,7 @@ class Helper():
         self.core = core
         self.input_files_messages = { 'geno': '', 'ind': '', 'snp': '', 'pops': '' }
         self.output_path = None
+        self.num_bootstrap_its = 0
 
     def set_input_paths(self, geno_file_str, ind_file_str, snp_file_str, pops_file_str):
         geno_file_path = Path(geno_file_str)
@@ -67,14 +68,24 @@ class Helper():
             print(args[1])
 
     def print_computation_progress(self, index):
-        # print(f'{100 * index / 9.0:.2f}%')
-        if index == 9:
-            print('Done.')
+        if index % 3 == 0 or index == 9:
+            print(f'{100 * index / 9:.1f}%', end = ' ', flush = True)
+
+    def print_bootstrap_progress(self, index):
+        if index % 5 == 0 or index == self.num_bootstrap_its:
+            print(f'{100 * index / self.num_bootstrap_its:.1f}%', end = ' ', flush = True)
 
     def run(self, num_procs):
         self.core.set_num_procs(num_procs)
 
         print(f'Mixtum v{self.core.version}\n')
+
+        self.process_input_files()
+        self.compute_frequencies()
+        self.compute_results()
+        self.save_output_files()
+
+    def process_input_files(self):
         print('Parsing and checking input files...')
 
         self.check_input_files()
@@ -85,16 +96,12 @@ class Helper():
 
         print('Parsing and checking finished.\n')
 
-        self.compute_frequencies()
-        self.compute_results()
-        self.save_output_files()
-
     def check_input_files(self):
         geno_is_ascii = self.core.is_geno_file_ascii()
         if geno_is_ascii:
             self.core.geno_table_shape(self.print_input_files_progress)
-        elif not self.core.read_geno_file_header():
-            print('Error: unsupported .geno file format')
+        elif not self.core.read_geno_file_header(self.print_input_files_progress):
+            print('Error: unsupported .geno file format.')
             sys.exit(1)
 
         self.core.parse_ind_file(self.print_input_files_progress)
@@ -135,14 +142,15 @@ class Helper():
 
     def compute_results(self):
         print('\nComputing admixture...')
-
         self.core.init_admixture_model()
         self.core.compute_results(self.print_computation_progress)
 
         if self.core.bootstrap:
-            self.core.compute_bootstrap()
+            num_bootstrap_pops, self.num_bootstrap_its = self.core.get_bootstrap_conditions()
+            print(f'\n\nPerforming bootstrap using {num_bootstrap_pops} auxiliary populations in {self.num_bootstrap_its} iterations...')
+            self.core.compute_bootstrap(self.print_bootstrap_progress)
 
-        print('\nResults:')
+        print('\n\nResults:')
         print(self.core.admixture_data())
 
     def plot(self):
@@ -153,9 +161,11 @@ class Helper():
         check_dir_path(self.output_path)
 
     def save_output_files(self):
+        print('\nSaving output files...')
         self.core.save_population_allele_frequencies(self.output_path.joinpath(Path('frequencies.dat')))
         self.core.save_f4_points(self.output_path.joinpath(Path('f4.dat')))
         self.core.save_admixture_data(self.output_path.joinpath(Path('admixture.dat')))
+        print('Done!')
 
     def set_bootstrap(self, bootstrap):
         if bootstrap:

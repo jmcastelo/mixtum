@@ -50,14 +50,23 @@ def population_allele_frequencies(file_path, pop_indices, allele_freqs):
                 break
 
 def population_allele_frequencies_packed(file_path, block_size, num_snp, pop_indices, allele_freqs):
+    # Open .geno file in binary mode for reading
     with file_path.open(mode = 'rb') as file:
+        # Skip header
         file.seek(block_size)
+        # Read block by block
         for index in range(num_snp):
+            # Read next block
             block = file.read(block_size)
+            # Get block's bits array
             bits = np.unpackbits(np.frombuffer(block, dtype = 'uint8'))
+            # Transform from binary to decimal
             alleles = 2 * bits[::2] + bits[1::2]
+            # Map 3 into 9
             alleles[alleles == 3] = 9
+            # Compute frequencies for selected populations
             allele_freqs[index] = allele_frequency([int(alleles[i]) for i in pop_indices])
+            # Abort computation?
             if event.is_set():
                 break
 
@@ -152,16 +161,16 @@ class Core:
         self.geno_file_ascii = True
         return True
 
-    def read_geno_file_header(self):
+    def read_geno_file_header(self, callback):
         with self.geno_file_path.open(mode = 'rb') as file:
             header = file.read(20).split()
-            print(header)
             if header[0] != b'GENO':
                 return False
             self.num_ind = int(header[1])
             self.num_snp = int(header[2])
             self.num_alleles = self.num_snp
             self.block_size = max(48, int(np.ceil(self.num_ind / 4)))
+            callback('geno', f'{self.num_ind} ind x {self.num_snp} snp')
             return True
 
     # Count number of rows and columns in .geno input file
@@ -667,22 +676,27 @@ class Core:
 
         return True
 
-    def compute_bootstrap(self):
+    def get_bootstrap_conditions(self):
         num_aux_pops = len(self.aux_pops)
+
         num_its = int(num_aux_pops * (num_aux_pops * 0.5 - 1) * 0.25)
         # num_its_ja = int(np.ceil(num_aux_pops / 2) * (np.ceil(num_aux_pops / 2) - 1) / 2)
         if num_its > 50: num_its = 50
-        print('num_its', num_its)
 
         num_bootstrap_pops = int(num_aux_pops / 2)
-        print('num_bootstrap_pops', num_bootstrap_pops)
+
+        return num_bootstrap_pops, num_its
+
+    def compute_bootstrap(self, progress_callback):
+        progress_callback(0)
+
+        num_bootstrap_pops, num_its = self.get_bootstrap_conditions()
 
         std_dev_alpha = 0
         std_dev_angle = 0
 
         for it in range(num_its):
             bootstrap_pops = np.random.choice(self.aux_pops, num_bootstrap_pops, replace=False)
-            print(bootstrap_pops)
 
             f4ab_prime, f4xb_prime = self.f4_prime(bootstrap_pops)
             alpha, alpha_error = self.least_squares(f4ab_prime, f4xb_prime)
@@ -692,14 +706,13 @@ class Core:
             angle *= 180 / np.pi
             std_dev_angle += (angle - self.angle_post_jl) ** 2
 
+            progress_callback(it + 1)
+
         std_dev_alpha = np.sqrt(std_dev_alpha / num_its)
         std_dev_angle = np.sqrt(std_dev_angle / num_its)
 
         self.std_dev_alpha = 1.98 * std_dev_alpha
         self.std_dev_angle = 1.98 * std_dev_angle
-
-        print('std_dev_alpha', self.std_dev_alpha)
-        print('std_dev_angle', self.std_dev_angle)
 
     # Plot a fit
     def plot_fit(self, x, y, alpha, title, xlabel, ylabel):
