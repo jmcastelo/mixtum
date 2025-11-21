@@ -18,7 +18,7 @@ from pathlib import Path
 import numpy as np
 from time import time
 from multiprocessing import get_context
-from math import ceil, isclose, expm1
+from math import ceil, isclose
 import matplotlib.pyplot as plt
 
 
@@ -90,6 +90,7 @@ class Core:
         self.num_snp_rows = 0
 
         self.snp_cutoff = 0
+        self.min_snp_cutoff = 5000
 
         self.avail_pops = []
         self.avail_pops_indices = {}
@@ -254,9 +255,17 @@ class Core:
 
     def set_snp_cutoff(self, n):
         self.snp_cutoff = n
+        if 0 < self.snp_cutoff < self.min_snp_cutoff:
+            self.snp_cutoff = self.min_snp_cutoff
+
+    def check_snp_cutoff(self):
+        return self.snp_cutoff <= self.num_snp
+
+    def check_min_snp_cutoff(self):
+        return self.min_snp_cutoff <= self.num_snp
 
     def set_num_alleles(self):
-        if self.snp_cutoff <= 0 or self.snp_cutoff > self.num_snp:
+        if self.snp_cutoff <= 0:
             self.num_alleles = self.num_snp
         else:
             self.num_alleles = self.snp_cutoff
@@ -446,7 +455,7 @@ class Core:
         xa = self.allele_frequencies[self.hybrid_pop] - self.allele_frequencies[self.parent1_pop]
         xb = self.allele_frequencies[self.hybrid_pop] - self.allele_frequencies[self.parent2_pop]
 
-        if xa > 0 and xb > 0:
+        if np.dot(xa, xa) > 0 and np.dot(xb, xb) > 0:
             self.cosine_pre_jl = np.dot(xa, xb) / np.sqrt(np.dot(xa, xa) * np.dot(xb, xb))
         else:
             self.cosine_pre_jl = 0
@@ -526,10 +535,7 @@ class Core:
 
         A = np.vstack([x, np.zeros(dim)]).T
 
-        try:
-            alpha = np.linalg.lstsq(A, y)[0][0]
-        except np.linalg.LinAlgError:
-            raise np.linalg.LinAlgError
+        alpha = np.linalg.lstsq(A, y)[0][0]
 
         Q = 0
         for i in range(dim):
@@ -553,17 +559,11 @@ class Core:
 
     # Computation of alpha
     def alpha_prime(self):
-        try:
-            self.alpha, self.alpha_error = self.least_squares(self.f4ab_prime, self.f4xb_prime)
-        except np.linalg.LinAlgError:
-            raise np.linalg.LinAlgError
+        self.alpha, self.alpha_error = self.least_squares(self.f4ab_prime, self.f4xb_prime)
 
     # Computation of alpha standard
     def alpha_standard(self):
-        try:
-            self.alpha_std, self.alpha_std_error = self.least_squares(self.f4ab_std, self.f4xb_std)
-        except np.linalg.LinAlgError:
-            raise np.linalg.LinAlgError
+        self.alpha_std, self.alpha_std_error = self.least_squares(self.f4ab_std, self.f4xb_std)
 
     # Computation of admixture angle post JL
     def admixture_angle_post_jl(self, aux_pops):
@@ -668,6 +668,22 @@ class Core:
         self.principal_components = np.einsum('ij,jk', a, wn)
         self.explained_variance = 100 * np.flip(self.pca_eigenvalues)[:3]/np.sum(self.pca_eigenvalues)
         self.pca_pops = pops
+
+    def check_singularities(self):
+        aux_pops_close = []
+        num_aux_pops = len(self.aux_pops)
+        for i in range(num_aux_pops):
+            for j in range(i + 1, num_aux_pops):
+                aux_pops_close.append(np.allclose(self.allele_frequencies[self.aux_pops[i]], self.allele_frequencies[self.aux_pops[j]], rtol = 0, atol = 1e-15))
+
+        singularities = {
+            f'{self.parent1_pop} ~ {self.parent2_pop}': np.allclose(self.allele_frequencies[self.parent1_pop], self.allele_frequencies[self.parent2_pop], rtol = 0, atol = 1e-15),
+            f'{self.hybrid_pop} ~ {self.parent1_pop}': np.allclose(self.allele_frequencies[self.hybrid_pop], self.allele_frequencies[self.parent1_pop], rtol = 0, atol = 1e-15),
+            f'{self.hybrid_pop} ~ {self.parent2_pop}': np.allclose(self.allele_frequencies[self.hybrid_pop], self.allele_frequencies[self.parent2_pop], rtol = 0, atol = 1e-15),
+            'Equal auxiliary populations': all(aux_pops_close)
+        }
+
+        return singularities
 
     # Compute all results
     def compute_results(self, progress_callback):

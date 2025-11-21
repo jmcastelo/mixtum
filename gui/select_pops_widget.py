@@ -82,10 +82,10 @@ class SelectPopsWidget(QWidget):
         # Number of computing processes
         self.snp_cutoff_spin_box = QSpinBox()
         self.snp_cutoff_spin_box.setSizePolicy(QSizePolicy.Policy.Maximum, QSizePolicy.Policy.Maximum)
-        self.snp_cutoff_spin_box.setMinimum(1)
+        self.snp_cutoff_spin_box.setMinimum(self.core.min_snp_cutoff)
         self.snp_cutoff_spin_box.setMaximum(9999999)
         self.snp_cutoff_spin_box.valueChanged.connect(self.set_snp_cutoff)
-        self.snp_cutoff_spin_box.setValue(1)
+        self.snp_cutoff_spin_box.setValue(self.core.min_snp_cutoff)
         self.snp_cutoff_spin_box.setEnabled(False)
 
         # Compute allele frequencies files button
@@ -169,6 +169,12 @@ class SelectPopsWidget(QWidget):
         layout.addWidget(separator)
         layout.addLayout(clayout)
 
+    def disable_controls(self):
+        self.comp_button.setEnabled(False)
+        self.stop_button.setEnabled(False)
+        self.save_freqs_button.setEnabled(False)
+        self.snp_cutoff_spin_box.setEnabled(False)
+
     @Slot()
     def init_search_table(self):
         self.search_widget.init_table(self.core.avail_pops)
@@ -225,8 +231,9 @@ class SelectPopsWidget(QWidget):
 
     @Slot(str)
     def computation_finished(self, worker_name):
-        self.stop_button.setEnabled(False)
-        self.save_freqs_button.setEnabled(True)
+        if worker_name == 'freqs':
+            self.stop_button.setEnabled(False)
+            self.save_freqs_button.setEnabled(True)
 
     @Slot()
     def compute_frequencies(self):

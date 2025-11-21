@@ -56,6 +56,7 @@ class MainWindow(QWidget):
         # Connections
         self.input_files_widget.ind_file_parsed.connect(self.sel_pops_widget.init_search_table)
         self.input_files_widget.snp_file_parsed.connect(self.sel_pops_widget.set_snp_cutoff_spin_box)
+        self.input_files_widget.min_snp_cutoff_check_failed.connect(self.sel_pops_widget.disable_controls)
         self.input_files_widget.parsed_pops_changed.connect(self.sel_pops_widget.init_selected_table)
         self.sel_pops_widget.computation_result.connect(self.mix_model_widget.init_pop_tables)
         self.sel_pops_widget.computation_result.connect(self.pca_widget.init_sel_pops_table)

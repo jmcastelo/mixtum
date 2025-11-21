@@ -29,6 +29,7 @@ class InputFilesWidget(QWidget):
     snp_file_parsed = Signal()
     ind_file_parsed = Signal()
     parsed_pops_changed = Signal()
+    min_snp_cutoff_check_failed = Signal()
 
     def __init__(self, core):
         QWidget.__init__(self)
@@ -121,7 +122,7 @@ class InputFilesWidget(QWidget):
         self.about_button.setStyleSheet(stylesheet_31)
         self.about_button.clicked.connect(self.show_about_dialog)
 
-        self.about_dialog = AboutDialog()
+        self.about_dialog = AboutDialog(core)
         self.about_dialog.setModal(False)
         self.about_dialog.finished.connect(self.enable_about_button)
 
@@ -157,7 +158,10 @@ class InputFilesWidget(QWidget):
         if worker_name == 'ind':
             self.ind_file_parsed.emit()
         elif worker_name == 'snp':
-            self.snp_file_parsed.emit()
+            if self.core.check_min_snp_cutoff():
+                self.snp_file_parsed.emit()
+            else:
+                self.min_snp_cutoff_check_failed.emit()
 
     @Slot()
     def geno_check_failed(self):

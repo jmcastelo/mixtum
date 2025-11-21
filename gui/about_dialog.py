@@ -20,13 +20,11 @@ from PySide6.QtWidgets import QDialog, QDialogButtonBox, QVBoxLayout, QTabWidget
 
 
 class AboutDialog(QDialog):
-    def __init__(self):
+    def __init__(self, core):
         QDialog.__init__(self)
 
         self.setWindowTitle('About Mixtum')
         self.setWindowModality(Qt.WindowModality.NonModal)
-
-        version = '1.0'
 
         license = """
                     GNU GENERAL PUBLIC LICENSE
@@ -741,7 +739,7 @@ Compute f2, f3 and f4 for specific combinations of populations. The statistics f
         how_to_text_edit.setText(how_to)
 
         stylesheet = 'color: white; background-color: rgb(32, 128, 32); font-size: 18pt; padding: 10'
-        about_label = QLabel(f"Mixtum v{version}\nCopyright (C) 2025 J. M. Castelo, J. A. Oteo & G. Oteo-García\njm.castelo@uv.es")
+        about_label = QLabel(f"Mixtum v{core.version}\nCopyright (C) 2025 J. M. Castelo, J. A. Oteo & G. Oteo-García\njm.castelo@uv.es")
         about_label.setStyleSheet(stylesheet)
 
         tab_widget = QTabWidget()

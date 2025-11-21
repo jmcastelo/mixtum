@@ -81,7 +81,9 @@ class Helper():
         print(f'Mixtum v{self.core.version}\n')
 
         self.process_input_files()
+        self.check_snp_cutoff()
         self.compute_frequencies()
+        self.check_singularities()
         self.compute_results()
         self.save_output_files()
 
@@ -137,8 +139,26 @@ class Helper():
         if len(missing_pops) > 0:
             print(f'Error: The following populations are missing from .ind file and were deselected: {','.join(missing_pops)}')
 
+    def check_snp_cutoff(self):
+        if not self.core.check_snp_cutoff():
+            print(f'Error: snp cutoff ({self.core.snp_cutoff}) > number of snp ({self.core.num_snp})')
+            sys.exit(1)
+
     def compute_frequencies(self):
         self.core.parallel_compute_populations_frequencies(self.print_freqs_computation_progress)
+
+    def check_singularities(self):
+        singularities = self.core.check_singularities()
+
+        error_messages = []
+        for singularity, test in singularities.items():
+            if test:
+                error_messages.append(singularity)
+
+        if len(error_messages) > 0:
+            print('Not enough snp to disentangle populations:')
+            print('\n'.join(error_messages))
+            sys.exit(1)
 
     def compute_results(self):
         print('\nComputing admixture...')
@@ -184,7 +204,7 @@ if __name__ == '__main__':
     parser.add_argument('--pops', type = str, required = True, help = 'path of selected populations file (1st row = hybrid, 2nd & 3rd rows = parents, next rows = aux pops)')
     parser.add_argument('--outdir', type = str, required = True, help = 'path of output dir')
     parser.add_argument('--nprocs', type = int, default = 1, help = 'number of parallel computation processes (default %(default)s)')
-    parser.add_argument('--snp-cutoff', type = int, default=0, help = 'limit number of snp, set value <= 0 for no limit (default %(default)s)')
+    parser.add_argument('--snp-cutoff', type = int, default = 0, help = 'limit number of snp (min. 5000), set value <= 0 for no limit (default %(default)s)')
     parser.add_argument('--bootstrap', action = argparse.BooleanOptionalAction, help = 'perform bootstrap')
     parser.add_argument('--plot', action = argparse.BooleanOptionalAction, help='plot fits and histogram')
 
