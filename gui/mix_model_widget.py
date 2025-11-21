@@ -117,7 +117,7 @@ class MixModelWidget(QWidget):
 
         # Plots
         self.plot_prime = Plot('Renormalized admixture', 'x', 'y', 5, 4, 100, selectable=True)
-        self.plot_std = Plot('Standard admixture', 'x', 'y', 5, 4, 100, selectable=True)
+        # self.plot_std = Plot('Standard admixture', 'x', 'y', 5, 4, 100, selectable=True)
         self.plot_histogram = Plot('Histogram', 'x', 'y', 5, 4, 100)
         self.plot_bars = Plot('Hybrid', '', '', 5, 1.25, 100, False, False)
         self.plot_angle = Plot('Angles', '', '', 4, 4, 100, show_toolbar = False, polar = True)
@@ -136,17 +136,17 @@ class MixModelWidget(QWidget):
         self.plot_prime.selected_index_changed.connect(self.set_prime_sel_pops_label)
 
         # Selected pop widgets: std
-        self.std_sel_pops_label = QLabel()
-        std_sel_pops_form_layout = QFormLayout()
-        std_sel_pops_form_layout.addRow('Selected auxiliaries:', self.std_sel_pops_label)
+        # self.std_sel_pops_label = QLabel()
+        # std_sel_pops_form_layout = QFormLayout()
+        # std_sel_pops_form_layout.addRow('Selected auxiliaries:', self.std_sel_pops_label)
 
-        std_widget = QWidget()
-        std_layout = QVBoxLayout(std_widget)
+        # std_widget = QWidget()
+        # std_layout = QVBoxLayout(std_widget)
 
-        std_layout.addWidget(self.plot_std, 1)
-        std_layout.addLayout(std_sel_pops_form_layout, 0)
+        # std_layout.addWidget(self.plot_std, 1)
+        # std_layout.addLayout(std_sel_pops_form_layout, 0)
 
-        self.plot_std.selected_index_changed.connect(self.set_std_sel_pops_label)
+        # self.plot_std.selected_index_changed.connect(self.set_std_sel_pops_label)
 
         # f4 ratio histogram bins spinbox
         self.bins_spinbox = QSpinBox(minimum = 1, maximum = 1000, value = self.core.alpha_ratio_hist_bins)
@@ -178,7 +178,7 @@ class MixModelWidget(QWidget):
         # Plots tab widget
         self.tab_widget = QTabWidget()
         self.tab_widget.addTab(prime_widget, 'Renormalized admixture')
-        self.tab_widget.addTab(std_widget, 'Standard admixture')
+        # self.tab_widget.addTab(std_widget, 'Standard admixture')
         self.tab_widget.addTab(f4_ratio_histogram_widget, 'f4 ratio histogram')
         self.tab_widget.addTab(angles_widget, 'Angles')
 
@@ -297,7 +297,7 @@ class MixModelWidget(QWidget):
 
         for index, pop in enumerate(self.core.selected_pops):
             item = QTableWidgetItem(pop)
-            item.setFlags(Qt.ItemFlag.ItemIsEnabled | Qt.ItemFlag.ItemIsSelectable)
+            item.setFlags(Qt.ItemFlag.ItemIsSelectable | Qt.ItemFlag.ItemIsEnabled)
             table.setItem(index, 0, item)
 
     @Slot()
@@ -352,7 +352,7 @@ class MixModelWidget(QWidget):
         self.log.set_entry('main', results_text)
 
         self.plot_prime.plot_fit(self.core.f4ab_prime, self.core.f4xb_prime, self.core.alpha, f'Renormalized admixture: {self.core.hybrid_pop} = alpha {self.core.parent1_pop} + (1 - alpha) {self.core.parent2_pop}', f"f4'({self.core.parent1_pop}, {self.core.parent2_pop}; i, j)", f"f4'({self.core.hybrid_pop}, {self.core.parent2_pop}; i, j)")
-        self.plot_std.plot_fit(self.core.f4ab_std, self.core.f4xb_std, self.core.alpha_std, f'Standard admixture: {self.core.hybrid_pop} = alpha {self.core.parent1_pop} + (1 - alpha) {self.core.parent2_pop}', f"f4({self.core.parent1_pop}, {self.core.parent2_pop}; i, j)", f"f4({self.core.hybrid_pop}, {self.core.parent2_pop}; i, j)")
+        # self.plot_std.plot_fit(self.core.f4ab_std, self.core.f4xb_std, self.core.alpha_std, f'Standard admixture: {self.core.hybrid_pop} = alpha {self.core.parent1_pop} + (1 - alpha) {self.core.parent2_pop}', f"f4({self.core.parent1_pop}, {self.core.parent2_pop}; i, j)", f"f4({self.core.hybrid_pop}, {self.core.parent2_pop}; i, j)")
         self.plot_histogram.plot_histogram(self.core.alpha_ratio_hist, f'{self.core.hybrid_pop} = alpha {self.core.parent1_pop} + (1 - alpha) {self.core.parent2_pop}', 'f4 ratio', 'Counts')
         self.plot_angle.plot_angle('Angles', [self.core.angle_pre_jl, self.core.angle_post_jl])
 
@@ -441,7 +441,7 @@ class MixModelWidget(QWidget):
         pop1, pop2 = self.core.get_aux_pop_pair(index)
         self.prime_sel_pops_label.setText(f"{pop1} + {pop2}")
 
-    @Slot(int)
-    def set_std_sel_pops_label(self, index):
-        pop1, pop2 = self.core.get_aux_pop_pair(index)
-        self.std_sel_pops_label.setText(f"{pop1} + {pop2}")
+    # @Slot(int)
+    # def set_std_sel_pops_label(self, index):
+    #     pop1, pop2 = self.core.get_aux_pop_pair(index)
+    #     self.std_sel_pops_label.setText(f"{pop1} + {pop2}")
