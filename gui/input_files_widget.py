@@ -178,9 +178,18 @@ class InputFilesWidget(QWidget):
 
         self.worker_finished = {'geno': False, 'ind': False, 'snp': False}
 
-        geno_worker = Worker('geno', self.core.geno_table_shape)
-        geno_worker.signals.progress[str, str].connect(self.log_progress)
-        geno_worker.signals.finished.connect(self.checking_finished)
+        geno_is_ascii = self.core.is_geno_file_ascii()
+
+        if geno_is_ascii:
+            geno_worker = Worker('geno', self.core.geno_table_shape)
+            geno_worker.signals.progress[str, str].connect(self.log_progress)
+            geno_worker.signals.finished.connect(self.checking_finished)
+        elif self.core.read_geno_file_header(self.log_progress):
+            self.checking_finished('geno')
+        else:
+            self.log.set_entry('main', 'Checking error!')
+            self.log.append_entry('check', 'Error: unsupported .geno file format.')
+            return
 
         ind_worker = Worker('ind', self.core.parse_ind_file)
         ind_worker.signals.progress[str, str].connect(self.log_progress)
@@ -190,7 +199,8 @@ class InputFilesWidget(QWidget):
         snp_worker.signals.progress[str, str].connect(self.log_progress)
         snp_worker.signals.finished.connect(self.checking_finished)
 
-        self.thread_pool.start(geno_worker)
+        if geno_is_ascii:
+            self.thread_pool.start(geno_worker)
         self.thread_pool.start(ind_worker)
         self.thread_pool.start(snp_worker)
 

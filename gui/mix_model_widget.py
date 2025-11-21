@@ -24,7 +24,7 @@ from pathlib import Path
 from PySide6.QtCore import Qt, Slot, QThreadPool
 from PySide6.QtWidgets import QWidget, QTableWidget, QGroupBox, QStackedLayout, QLabel, QSpinBox, QFormLayout
 from PySide6.QtWidgets import QAbstractItemView, QTableWidgetItem, QPushButton, QSizePolicy, QProgressBar, QHBoxLayout
-from PySide6.QtWidgets import QTabWidget, QVBoxLayout, QSplitter, QHeaderView, QFileDialog
+from PySide6.QtWidgets import QTabWidget, QVBoxLayout, QSplitter, QHeaderView, QFileDialog, QCheckBox
 
 
 
@@ -88,6 +88,12 @@ class MixModelWidget(QWidget):
         self.compute_button.setSizePolicy(QSizePolicy.Policy.Maximum, QSizePolicy.Policy.Maximum)
         self.compute_button.setEnabled(False)
         self.compute_button.clicked.connect(self.compute_results)
+
+        # Bootstrap checkbox
+        self.bootstrap_checkbox = QCheckBox('Boostrap')
+        self.bootstrap_checkbox.setSizePolicy(QSizePolicy.Policy.Maximum, QSizePolicy.Policy.Maximum)
+        self.bootstrap_checkbox.setEnabled(False)
+        self.bootstrap_checkbox.clicked.connect(self.set_bootstrap)
 
         # Progress bar
         self.progress_bar = QProgressBar()
@@ -220,6 +226,7 @@ class MixModelWidget(QWidget):
         # Lower layout
         llayout = QHBoxLayout()
         llayout.addWidget(self.compute_button)
+        llayout.addWidget(self.bootstrap_checkbox)
         llayout.addWidget(self.progress_bar)
         llayout.addWidget(self.save_f4_button)
         llayout.addWidget(self.save_results_button)
@@ -245,6 +252,7 @@ class MixModelWidget(QWidget):
         self.check_aux_table_selection()
 
         self.compute_button.setEnabled(True)
+        self.bootstrap_checkbox.setEnabled(True)
 
     def check_table_selection(self, table, pop):
         self.hybrid_table.itemSelectionChanged.disconnect(self.hybrid_changed)
@@ -328,8 +336,11 @@ class MixModelWidget(QWidget):
         self.check_aux_table_selection()
         self.compute_button.setEnabled(len(self.aux_table.selectedItems()) > 2)
 
-    @Slot(str)
-    def computation_finished(self, worker_name):
+    @Slot()
+    def set_bootstrap(self, checked):
+        self.core.bootstrap = checked
+
+    def output_results(self):
         self.log.set_entry('main', self.core.admixture_data())
 
         self.plot_prime.plot_fit(self.core.f4ab_prime, self.core.f4xb_prime, self.core.alpha, f'Renormalized admixture: {self.core.hybrid_pop} = alpha {self.core.parent1_pop} + (1 - alpha) {self.core.parent2_pop}', f"f4'({self.core.parent1_pop}, {self.core.parent2_pop}; i, j)", f"f4'({self.core.hybrid_pop}, {self.core.parent2_pop}; i, j)")
@@ -348,10 +359,29 @@ class MixModelWidget(QWidget):
         self.bins_spinbox.setEnabled(True)
 
     @Slot()
+    def results_computed(self, worker_name):
+        if worker_name == 'results':
+            if self.core.bootstrap:
+                worker = Worker('bootstrap', self.core.compute_bootstrap)
+                worker.signals.progress[int].connect(self.progress_bar.setValue)
+                worker.signals.finished.connect(self.results_computed)
+
+                num_bootstrap_pops, num_bootstrap_its = self.core.get_bootstrap_conditions()
+                self.progress_bar.setMaximum(num_bootstrap_its)
+
+                self.thread_pool.start(worker)
+            else:
+                self.output_results()
+        elif worker_name == 'bootstrap':
+            self.output_results()
+
+    @Slot()
     def compute_results(self):
         worker = Worker('results', self.core.compute_results)
         worker.signals.progress[int].connect(self.progress_bar.setValue)
-        worker.signals.finished.connect(self.computation_finished)
+        worker.signals.finished.connect(self.results_computed)
+
+        self.progress_bar.setMaximum(9)
 
         self.thread_pool.start(worker)
 

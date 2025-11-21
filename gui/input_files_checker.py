@@ -67,15 +67,23 @@ class InputFilesChecker(QObject):
     def check_input_files(self):
         valid = True
 
-        if not self.core.check_geno_file():
-            self.geno_file_error.emit()
-            valid = False
-        if not self.core.check_ind_and_geno():
-            self.ind_file_error.emit(self.core.num_ind_rows, self.core.num_geno_cols[0])
-            valid = False
-        if not self.core.check_snp_and_geno():
-            self.snp_file_error.emit(self.core.num_snp_rows, self.core.num_geno_rows)
-            valid = False
+        if self.core.is_geno_file_ascii():
+            if not self.core.check_geno_file():
+                self.geno_file_error.emit()
+                valid = False
+            if not self.core.check_ind_and_geno():
+                self.ind_file_error.emit(self.core.num_ind_rows, self.core.num_geno_cols[0])
+                valid = False
+            if not self.core.check_snp_and_geno():
+                self.snp_file_error.emit(self.core.num_snp_rows, self.core.num_geno_rows)
+                valid = False
+        else:
+            if not self.core.check_ind_and_geno_packed():
+                self.ind_file_error.emit(self.core.num_ind_rows, self.core.num_ind)
+                valid = False
+            if not self.core.check_snp_and_geno_packed():
+                self.snp_file_error.emit(self.core.num_snp_rows, self.core.num_snp)
+                valid = False
 
         return valid
 
