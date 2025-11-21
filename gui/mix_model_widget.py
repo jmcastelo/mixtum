@@ -101,6 +101,7 @@ class MixModelWidget(QWidget):
         self.progress_bar.setMinimum(0)
         self.progress_bar.setMaximum(9)
         self.progress_bar.setValue(0)
+        self.progress = 0
 
         # Save f4-points button
         self.save_f4_button = QPushButton('Save f4-points')
@@ -340,8 +341,15 @@ class MixModelWidget(QWidget):
     def set_bootstrap(self, checked):
         self.core.bootstrap = checked
 
+    @Slot()
+    def set_progress_bar_value(self, step):
+        if step > 0:
+            self.progress += 1
+        self.progress_bar.setValue(self.progress)
+
     def output_results(self):
-        self.log.set_entry('main', self.core.admixture_data())
+        results_text = self.core.admixture_data()
+        self.log.set_entry('main', results_text)
 
         self.plot_prime.plot_fit(self.core.f4ab_prime, self.core.f4xb_prime, self.core.alpha, f'Renormalized admixture: {self.core.hybrid_pop} = alpha {self.core.parent1_pop} + (1 - alpha) {self.core.parent2_pop}', f"f4'({self.core.parent1_pop}, {self.core.parent2_pop}; i, j)", f"f4'({self.core.hybrid_pop}, {self.core.parent2_pop}; i, j)")
         self.plot_std.plot_fit(self.core.f4ab_std, self.core.f4xb_std, self.core.alpha_std, f'Standard admixture: {self.core.hybrid_pop} = alpha {self.core.parent1_pop} + (1 - alpha) {self.core.parent2_pop}', f"f4({self.core.parent1_pop}, {self.core.parent2_pop}; i, j)", f"f4({self.core.hybrid_pop}, {self.core.parent2_pop}; i, j)")
@@ -358,18 +366,10 @@ class MixModelWidget(QWidget):
         self.save_results_button.setEnabled(True)
         self.bins_spinbox.setEnabled(True)
 
-    @Slot()
     def results_computed(self, worker_name):
         if worker_name == 'results':
             if self.core.bootstrap:
-                worker = Worker('bootstrap', self.core.compute_bootstrap)
-                worker.signals.progress[int].connect(self.progress_bar.setValue)
-                worker.signals.finished.connect(self.results_computed)
-
-                num_bootstrap_pops, num_bootstrap_its = self.core.get_bootstrap_conditions()
-                self.progress_bar.setMaximum(num_bootstrap_its)
-
-                self.thread_pool.start(worker)
+                self.compute_bootstrap()
             else:
                 self.output_results()
         elif worker_name == 'bootstrap':
@@ -378,10 +378,23 @@ class MixModelWidget(QWidget):
     @Slot()
     def compute_results(self):
         worker = Worker('results', self.core.compute_results)
-        worker.signals.progress[int].connect(self.progress_bar.setValue)
+        worker.signals.progress[int].connect(self.set_progress_bar_value)
         worker.signals.finished.connect(self.results_computed)
 
-        self.progress_bar.setMaximum(9)
+        if self.core.bootstrap:
+            num_bootstrap_pops, num_bootstrap_its = self.core.get_bootstrap_conditions()
+            self.progress_bar.setMaximum(9 + num_bootstrap_its)
+        else:
+            self.progress_bar.setMaximum(9)
+
+        self.progress = 0
+
+        self.thread_pool.start(worker)
+
+    def compute_bootstrap(self):
+        worker = Worker('bootstrap', self.core.compute_bootstrap)
+        worker.signals.progress[int].connect(self.set_progress_bar_value)
+        worker.signals.finished.connect(self.results_computed)
 
         self.thread_pool.start(worker)
 
