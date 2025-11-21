@@ -18,7 +18,7 @@ from pathlib import Path
 import numpy as np
 from time import time
 from multiprocessing import get_context
-from math import ceil, isclose
+from math import ceil, isclose, expm1
 import matplotlib.pyplot as plt
 
 
@@ -446,7 +446,10 @@ class Core:
         xa = self.allele_frequencies[self.hybrid_pop] - self.allele_frequencies[self.parent1_pop]
         xb = self.allele_frequencies[self.hybrid_pop] - self.allele_frequencies[self.parent2_pop]
 
-        self.cosine_pre_jl = np.dot(xa, xb) / np.sqrt(np.dot(xa, xa) * np.dot(xb, xb))
+        if xa > 0 and xb > 0:
+            self.cosine_pre_jl = np.dot(xa, xb) / np.sqrt(np.dot(xa, xa) * np.dot(xb, xb))
+        else:
+            self.cosine_pre_jl = 0
         self.angle_pre_jl = np.arccos(self.cosine_pre_jl) * 180 / np.pi
         self.percentage_pre_jl = np.arccos(self.cosine_pre_jl) / np.pi
 
@@ -472,8 +475,12 @@ class Core:
             for j in range(i + 1, num_aux_pops):
                 ij = self.allele_frequencies[aux_pops[i]] - self.allele_frequencies[aux_pops[j]]
                 norm_ij = np.linalg.norm(ij)
-                f4ab_prime[index] = np.dot(ab, ij) / norm_ij
-                f4xb_prime[index] = np.dot(xb, ij) / norm_ij
+                if norm_ij > 0:
+                    f4ab_prime[index] = np.dot(ab, ij) / norm_ij
+                    f4xb_prime[index] = np.dot(xb, ij) / norm_ij
+                else:
+                    f4ab_prime[index] = 0
+                    f4xb_prime[index] = 0
                 index += 1
 
         return f4ab_prime, f4xb_prime
@@ -513,13 +520,16 @@ class Core:
                 k += 1
         return '', ''
 
-
     # Least squares fit
     def least_squares(self, x, y):
         dim = len(x)
 
         A = np.vstack([x, np.zeros(dim)]).T
-        alpha = np.linalg.lstsq(A, y)[0][0]
+
+        try:
+            alpha = np.linalg.lstsq(A, y)[0][0]
+        except np.linalg.LinAlgError:
+            raise np.linalg.LinAlgError
 
         Q = 0
         for i in range(dim):
@@ -543,11 +553,17 @@ class Core:
 
     # Computation of alpha
     def alpha_prime(self):
-        self.alpha, self.alpha_error = self.least_squares(self.f4ab_prime, self.f4xb_prime)
+        try:
+            self.alpha, self.alpha_error = self.least_squares(self.f4ab_prime, self.f4xb_prime)
+        except np.linalg.LinAlgError:
+            raise np.linalg.LinAlgError
 
     # Computation of alpha standard
     def alpha_standard(self):
-        self.alpha_std, self.alpha_std_error = self.least_squares(self.f4ab_std, self.f4xb_std)
+        try:
+            self.alpha_std, self.alpha_std_error = self.least_squares(self.f4ab_std, self.f4xb_std)
+        except np.linalg.LinAlgError:
+            raise np.linalg.LinAlgError
 
     # Computation of admixture angle post JL
     def admixture_angle_post_jl(self, aux_pops):
@@ -568,9 +584,10 @@ class Core:
                 xbij = np.dot(xb, ij)
                 ijij = np.dot(ij, ij)
 
-                sum1 += xaij * xbij / ijij
-                sum2 += (xaij ** 2) / ijij
-                sum3 += (xbij ** 2) / ijij
+                if ijij > 0:
+                    sum1 += xaij * xbij / ijij
+                    sum2 += (xaij ** 2) / ijij
+                    sum3 += (xbij ** 2) / ijij
 
         cosine_post_jl = sum1 / np.sqrt(sum2 * sum3)
         angle_post_jl = np.arccos(cosine_post_jl)
@@ -668,13 +685,19 @@ class Core:
         self.f4ab_prime, self.f4xb_prime = self.f4_prime(self.aux_pops)
         progress_callback(4)
 
-        self.alpha_prime()
+        try:
+            self.alpha_prime()
+        except np.linalg.LinAlgError:
+            raise np.linalg.LinAlgError
         progress_callback(5)
 
         self.f4_std()
         progress_callback(6)
 
-        self.alpha_standard()
+        try:
+            self.alpha_standard()
+        except np.linalg.LinAlgError:
+            raise np.linalg.LinAlgError
         progress_callback(7)
 
         self.cosine_post_jl, self.angle_post_jl = self.admixture_angle_post_jl(self.aux_pops)
@@ -712,7 +735,10 @@ class Core:
             bootstrap_pops = np.random.choice(self.aux_pops, num_bootstrap_pops, replace=False)
 
             f4ab_prime, f4xb_prime = self.f4_prime(bootstrap_pops)
-            alpha, alpha_error = self.least_squares(f4ab_prime, f4xb_prime)
+            try:
+                alpha, alpha_error = self.least_squares(f4ab_prime, f4xb_prime)
+            except np.linalg.LinAlgError:
+                raise np.linalg.LinAlgError
             std_dev_alpha += (alpha - self.alpha) ** 2
 
             cosine, angle = self.admixture_angle_post_jl(bootstrap_pops)

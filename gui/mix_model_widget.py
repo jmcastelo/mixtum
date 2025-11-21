@@ -40,7 +40,7 @@ class MixModelWidget(QWidget):
 
         # Log
         self.log = LogSystem(['main'])
-        self.log.set_entry('main', 'Choose admixture model and auxiliary populations, then compute results.')
+        self.log.set_entry('main', 'Choose admixture model and auxiliary populations (>=4, or >=8 if bootstrap), then compute results.')
 
         # Hybrid table widget
         self.hybrid_table = QTableWidget()
@@ -335,11 +335,18 @@ class MixModelWidget(QWidget):
         sel_items = self.aux_table.selectedItems()
         self.core.set_aux_pops([item.text() for item in sel_items])
         self.check_aux_table_selection()
-        self.compute_button.setEnabled(len(self.aux_table.selectedItems()) > 2)
+        if self.core.bootstrap:
+            self.compute_button.setEnabled(len(self.aux_table.selectedItems()) >= 8)
+        else:
+            self.compute_button.setEnabled(len(self.aux_table.selectedItems()) >= 4)
 
     @Slot()
     def set_bootstrap(self, checked):
         self.core.bootstrap = checked
+        if checked:
+            self.compute_button.setEnabled(len(self.aux_table.selectedItems()) >= 8)
+        else:
+            self.compute_button.setEnabled(len(self.aux_table.selectedItems()) >= 4)
 
     @Slot()
     def set_progress_bar_value(self, step):
@@ -376,9 +383,14 @@ class MixModelWidget(QWidget):
             self.output_results()
 
     @Slot()
+    def on_compute_error(self, info):
+        print(info)
+
+    @Slot()
     def compute_results(self):
         worker = Worker('results', self.core.compute_results)
         worker.signals.progress[int].connect(self.set_progress_bar_value)
+        worker.signals.error[tuple].connect(self.on_compute_error)
         worker.signals.finished.connect(self.results_computed)
 
         if self.core.bootstrap:
@@ -394,6 +406,7 @@ class MixModelWidget(QWidget):
     def compute_bootstrap(self):
         worker = Worker('bootstrap', self.core.compute_bootstrap)
         worker.signals.progress[int].connect(self.set_progress_bar_value)
+        worker.signals.error[tuple].connect(self.on_compute_error)
         worker.signals.finished.connect(self.results_computed)
 
         self.thread_pool.start(worker)

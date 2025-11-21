@@ -58,49 +58,58 @@ class SelectPopsWidget(QWidget):
 
         # Select populations button
         self.select_button = QPushButton('Select populations')
-        self.select_button.setSizePolicy(QSizePolicy.Policy.Maximum, QSizePolicy.Policy.Preferred)
+        self.select_button.setSizePolicy(QSizePolicy.Policy.Maximum, QSizePolicy.Policy.Maximum)
         self.select_button.clicked.connect(self.select_populations)
 
         # Remove populations button
         self.remove_button = QPushButton('Deselect populations')
-        self.remove_button.setSizePolicy(QSizePolicy.Policy.Maximum, QSizePolicy.Policy.Preferred)
+        self.remove_button.setSizePolicy(QSizePolicy.Policy.Maximum, QSizePolicy.Policy.Maximum)
         self.remove_button.clicked.connect(self.remove_populations)
 
         # Reset populations button
         self.reset_button = QPushButton('Reset populations')
-        self.reset_button.setSizePolicy(QSizePolicy.Policy.Maximum, QSizePolicy.Policy.Preferred)
+        self.reset_button.setSizePolicy(QSizePolicy.Policy.Maximum, QSizePolicy.Policy.Maximum)
         self.reset_button.clicked.connect(self.reset_populations)
 
         # Number of computing processes
         self.num_procs_spin_box = QSpinBox()
-        self.num_procs_spin_box.setSizePolicy(QSizePolicy.Policy.Maximum, QSizePolicy.Policy.Preferred)
+        self.num_procs_spin_box.setSizePolicy(QSizePolicy.Policy.Maximum, QSizePolicy.Policy.Maximum)
         self.num_procs_spin_box.setMinimum(1)
         self.num_procs_spin_box.setMaximum(9999)
         self.num_procs_spin_box.valueChanged.connect(self.set_num_procs)
         self.num_procs_spin_box.setValue(1)
 
+        # Number of computing processes
+        self.snp_cutoff_spin_box = QSpinBox()
+        self.snp_cutoff_spin_box.setSizePolicy(QSizePolicy.Policy.Maximum, QSizePolicy.Policy.Maximum)
+        self.snp_cutoff_spin_box.setMinimum(1)
+        self.snp_cutoff_spin_box.setMaximum(9999999)
+        self.snp_cutoff_spin_box.valueChanged.connect(self.set_snp_cutoff)
+        self.snp_cutoff_spin_box.setValue(1)
+        self.snp_cutoff_spin_box.setEnabled(False)
+
         # Compute allele frequencies files button
         self.comp_button = QPushButton('Compute frequencies')
-        self.comp_button.setSizePolicy(QSizePolicy.Policy.Maximum, QSizePolicy.Policy.Preferred)
+        self.comp_button.setSizePolicy(QSizePolicy.Policy.Maximum, QSizePolicy.Policy.Maximum)
         self.comp_button.setEnabled(False)
         self.comp_button.clicked.connect(self.compute_frequencies)
 
         # Stop computation button
         self.stop_button = QPushButton('Stop computation')
-        self.stop_button.setSizePolicy(QSizePolicy.Policy.Maximum, QSizePolicy.Policy.Preferred)
+        self.stop_button.setSizePolicy(QSizePolicy.Policy.Maximum, QSizePolicy.Policy.Maximum)
         self.stop_button.setEnabled(False)
         self.stop_button.clicked.connect(self.stop_computation)
 
         # Progress bar
         self.progress_bar = QProgressBar()
-        self.progress_bar.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
+        self.progress_bar.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Maximum)
         self.progress_bar.setMinimum(0)
         self.progress_bar.setMaximum(1)
         self.progress_bar.setValue(0)
 
         # Save frequencies button
         self.save_freqs_button = QPushButton('Save frequencies')
-        self.save_freqs_button.setSizePolicy(QSizePolicy.Policy.Maximum, QSizePolicy.Policy.Preferred)
+        self.save_freqs_button.setSizePolicy(QSizePolicy.Policy.Maximum, QSizePolicy.Policy.Maximum)
         self.save_freqs_button.setEnabled(False)
         self.save_freqs_button.clicked.connect(self.save_frequencies)
 
@@ -137,13 +146,18 @@ class SelectPopsWidget(QWidget):
         tlayout.addWidget(search_group)
         tlayout.addWidget(select_group)
 
-        # Form layout
-        flayout = QFormLayout()
-        flayout.addRow('Number of processes:', self.num_procs_spin_box)
+        # Numprocs form layout
+        npflayout = QFormLayout()
+        npflayout.addRow('Number of processes:', self.num_procs_spin_box)
+
+        # Cutoff form layout
+        coflayout = QFormLayout()
+        coflayout.addRow('snp cutoff:', self.snp_cutoff_spin_box)
 
         # Computation layout
         clayout = QHBoxLayout()
-        clayout.addLayout(flayout)
+        clayout.addLayout(npflayout)
+        clayout.addLayout(coflayout)
         clayout.addWidget(self.comp_button)
         clayout.addWidget(self.stop_button)
         clayout.addWidget(self.progress_bar)
@@ -194,6 +208,16 @@ class SelectPopsWidget(QWidget):
     @Slot(int)
     def set_num_procs(self, procs):
         self.core.set_num_procs(procs)
+
+    @Slot()
+    def set_snp_cutoff_spin_box(self):
+        self.snp_cutoff_spin_box.setMaximum(self.core.num_snp)
+        self.snp_cutoff_spin_box.setValue(self.core.num_snp)
+        self.snp_cutoff_spin_box.setEnabled(True)
+
+    @Slot(int)
+    def set_snp_cutoff(self, n):
+        self.core.set_snp_cutoff(n)
 
     @Slot(str, str, int)
     def log_progress(self, key, message, line_num):

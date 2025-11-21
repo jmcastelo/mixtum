@@ -26,6 +26,7 @@ from PySide6.QtWidgets import QWidget, QPushButton, QSizePolicy, QGroupBox, QVBo
 
 
 class InputFilesWidget(QWidget):
+    snp_file_parsed = Signal()
     ind_file_parsed = Signal()
     parsed_pops_changed = Signal()
 
@@ -155,6 +156,8 @@ class InputFilesWidget(QWidget):
 
         if worker_name == 'ind':
             self.ind_file_parsed.emit()
+        elif worker_name == 'snp':
+            self.snp_file_parsed.emit()
 
     @Slot()
     def geno_check_failed(self):
