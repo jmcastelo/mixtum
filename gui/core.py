@@ -42,11 +42,11 @@ def allele_frequency(alleles):
     return freq / num_alleles
 
 # Compute frequencies of a population
-def population_allele_frequencies(file_path, pop_indices, allele_freqs):
+def population_allele_frequencies(file_path, num_snp, pop_indices, allele_freqs):
     with file_path.open(mode = 'r', encoding = 'utf-8') as file:
         for index, row in enumerate(file):
             allele_freqs[index] = allele_frequency([int(row[i]) for i in pop_indices])
-            if event.is_set():
+            if index == num_snp - 1 or event.is_set():
                 break
 
 def population_allele_frequencies_packed(file_path, block_size, num_snp, pop_indices, allele_freqs):
@@ -85,10 +85,11 @@ class Core:
         self.num_snp = 0
         self.block_size = 48
 
-        self.num_geno_rows = 0
         self.num_geno_cols = []
         self.num_ind_rows = 0
         self.num_snp_rows = 0
+
+        self.snp_cutoff = 0
 
         self.avail_pops = []
         self.avail_pops_indices = {}
@@ -175,20 +176,20 @@ class Core:
 
     # Count number of rows and columns in .geno input file
     def geno_table_shape(self, progress_callback):
-        self.num_geno_rows = 0
+        self.num_snp = 0
         self.num_geno_cols = []
 
         with self.geno_file_path.open(mode = 'r', encoding = 'utf-8') as file:
             for row in file:
                 row = row.rstrip()
                 self.num_geno_cols.append(len(row))
-                if self.num_geno_rows % 1000 == 0:
-                    progress_callback('geno', f'Number of rows: {self.num_geno_rows}')
-                self.num_geno_rows += 1
+                if self.num_snp % 1000 == 0:
+                    progress_callback('geno', f'Number of rows: {self.num_snp}')
+                self.num_snp += 1
 
-        self.num_alleles = self.num_geno_rows
+        self.num_alleles = self.num_snp
 
-        progress_callback('geno', f'Number of rows: {self.num_geno_rows}')
+        progress_callback('geno', f'Number of rows: {self.num_snp}')
 
         return True
 
@@ -199,7 +200,8 @@ class Core:
 
         with self.ind_file_path.open(mode = 'r', encoding = 'utf-8') as file:
             for index, row in enumerate(file):
-                progress_callback('ind', f'Number of rows: {self.num_ind_rows}')
+                if self.num_ind_rows % 1000 == 0:
+                    progress_callback('ind', f'Number of rows: {self.num_ind_rows}')
 
                 columns = row.split()
                 pop_name = columns[-1]
@@ -242,13 +244,22 @@ class Core:
         return self.num_ind_rows == self.num_geno_cols[0]
 
     def check_snp_and_geno(self):
-        return self.num_snp_rows == self.num_geno_rows
+        return self.num_snp_rows == self.num_snp
 
     def check_ind_and_geno_packed(self):
         return self.num_ind_rows == self.num_ind
 
     def check_snp_and_geno_packed(self):
         return self.num_snp_rows == self.num_snp
+
+    def set_snp_cutoff(self, n):
+        self.snp_cutoff = n
+
+    def set_num_alleles(self):
+        if self.snp_cutoff <= 0 or self.snp_cutoff > self.num_snp:
+            self.num_alleles = self.num_snp
+        else:
+            self.num_alleles = self.snp_cutoff
 
     # Parse input file containing selected populations
     def parse_selected_populations(self, progress_callback):
@@ -305,6 +316,8 @@ class Core:
         batch_size = ceil(num_sel_pops / self.num_procs)
         index = 0
 
+        self.set_num_alleles()
+
         allele_freqs = [ctx.Array('d', self.num_alleles) for i in range(num_sel_pops)]
 
         progress_callback('main', f'Computing {self.num_alleles} frequencies per population for {num_sel_pops} populations in {batch_size} batches of {self.num_procs} parallel processes...', 0)
@@ -320,9 +333,9 @@ class Core:
             for proc in range(self.num_procs):
                 if index < num_sel_pops:
                     if self.geno_file_ascii:
-                        p = ctx.Process(target = population_allele_frequencies, args = (self.geno_file_path, pop_indices[index], allele_freqs[index]))
+                        p = ctx.Process(target = population_allele_frequencies, args = (self.geno_file_path, self.num_alleles, pop_indices[index], allele_freqs[index]))
                     else:
-                        p = ctx.Process(target = population_allele_frequencies_packed, args = (self.geno_file_path, self.block_size, self.num_snp, pop_indices[index], allele_freqs[index]))
+                        p = ctx.Process(target = population_allele_frequencies_packed, args = (self.geno_file_path, self.block_size, self.num_alleles, pop_indices[index], allele_freqs[index]))
                     procs.append(p)
                     p.start()
                     computing_pops.append(self.selected_pops[index])

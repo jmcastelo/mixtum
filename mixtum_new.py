@@ -171,6 +171,9 @@ class Helper():
         if bootstrap:
             self.core.bootstrap = True
 
+    def set_snp_cutoff(self, n):
+        self.core.set_snp_cutoff(n)
+
 if __name__ == '__main__':
     core = Core()
 
@@ -181,8 +184,9 @@ if __name__ == '__main__':
     parser.add_argument('--pops', type = str, required = True, help = 'path of selected populations file (1st row = hybrid, 2nd & 3rd rows = parents, next rows = aux pops)')
     parser.add_argument('--outdir', type = str, required = True, help = 'path of output dir')
     parser.add_argument('--nprocs', type = int, default = 1, help = 'number of parallel computation processes (default %(default)s)')
-    parser.add_argument('--bootstrap', action=argparse.BooleanOptionalAction, help = 'perform bootstrap')
-    parser.add_argument('--plot', action=argparse.BooleanOptionalAction, help='plot fits and histogram')
+    parser.add_argument('--snp-cutoff', type = int, default=0, help = 'limit number of snp, set value <= 0 for no limit (default %(default)s)')
+    parser.add_argument('--bootstrap', action = argparse.BooleanOptionalAction, help = 'perform bootstrap')
+    parser.add_argument('--plot', action = argparse.BooleanOptionalAction, help='plot fits and histogram')
 
     args = parser.parse_args()
 
@@ -190,6 +194,7 @@ if __name__ == '__main__':
 
     helper.set_input_paths(args.geno, args.ind, args.snp, args.pops)
     helper.set_output_dir(args.outdir)
+    helper.set_snp_cutoff(args.snp_cutoff)
     helper.set_bootstrap(args.bootstrap)
 
     helper.run(args.nprocs)
