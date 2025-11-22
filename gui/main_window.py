@@ -55,9 +55,16 @@ class MainWindow(QWidget):
 
         # Connections
         self.input_files_widget.ind_file_parsed.connect(self.sel_pops_widget.init_search_table)
+        self.input_files_widget.ind_file_parsed.connect(self.sel_pops_widget.reset_controls)
+        self.input_files_widget.ind_file_parsed.connect(self.pca_widget.reset_controls)
+        self.input_files_widget.ind_file_parsed.connect(self.f_statistics_widget.reset_controls)
         self.input_files_widget.snp_file_parsed.connect(self.sel_pops_widget.set_snp_cutoff_spin_box)
         self.input_files_widget.min_snp_cutoff_check_failed.connect(self.sel_pops_widget.disable_controls)
         self.input_files_widget.parsed_pops_changed.connect(self.sel_pops_widget.init_selected_table)
+
+        self.sel_pops_widget.selected_pops_changed.connect(self.mix_model_widget.reset_controls)
+        self.sel_pops_widget.selected_pops_changed.connect(self.pca_widget.reset_controls)
+        self.sel_pops_widget.selected_pops_changed.connect(self.f_statistics_widget.reset_controls)
         self.sel_pops_widget.computation_result.connect(self.mix_model_widget.init_pop_tables)
         self.sel_pops_widget.computation_result.connect(self.pca_widget.init_sel_pops_table)
         self.sel_pops_widget.computation_result.connect(self.f_statistics_widget.init_pop_tables)
@@ -90,6 +97,8 @@ class MainWindow(QWidget):
                 self.sel_pops_widget.log.changed.disconnect(self.log_widget.set_text)
             if self.mix_model_widget.log.is_changed_signal_connected():
                 self.mix_model_widget.log.changed.disconnect(self.log_widget.set_text)
+            if self.pca_widget.log.is_changed_signal_connected():
+                self.pca_widget.log.changed.disconnect(self.log_widget.set_text)
             if self.f_statistics_widget.log.is_changed_signal_connected():
                 self.f_statistics_widget.log.changed.disconnect(self.log_widget.set_text)
             self.input_files_widget.log.changed.connect(self.log_widget.set_text)
@@ -99,6 +108,8 @@ class MainWindow(QWidget):
                 self.input_files_widget.log.changed.disconnect(self.log_widget.set_text)
             if self.mix_model_widget.log.is_changed_signal_connected():
                 self.mix_model_widget.log.changed.disconnect(self.log_widget.set_text)
+            if self.pca_widget.log.is_changed_signal_connected():
+                self.pca_widget.log.changed.disconnect(self.log_widget.set_text)
             if self.f_statistics_widget.log.is_changed_signal_connected():
                 self.f_statistics_widget.log.changed.disconnect(self.log_widget.set_text)
             self.sel_pops_widget.log.changed.connect(self.log_widget.set_text)
@@ -108,10 +119,23 @@ class MainWindow(QWidget):
                 self.input_files_widget.log.changed.disconnect(self.log_widget.set_text)
             if self.sel_pops_widget.log.is_changed_signal_connected():
                 self.sel_pops_widget.log.changed.disconnect(self.log_widget.set_text)
+            if self.pca_widget.log.is_changed_signal_connected():
+                self.pca_widget.log.changed.disconnect(self.log_widget.set_text)
             if self.f_statistics_widget.log.is_changed_signal_connected():
                 self.f_statistics_widget.log.changed.disconnect(self.log_widget.set_text)
             self.mix_model_widget.log.changed.connect(self.log_widget.set_text)
             self.mix_model_widget.log.set_text()
+        elif index == 3:
+            if self.input_files_widget.log.is_changed_signal_connected():
+                self.input_files_widget.log.changed.disconnect(self.log_widget.set_text)
+            if self.sel_pops_widget.log.is_changed_signal_connected():
+                self.sel_pops_widget.log.changed.disconnect(self.log_widget.set_text)
+            if self.mix_model_widget.log.is_changed_signal_connected():
+                self.mix_model_widget.log.changed.disconnect(self.log_widget.set_text)
+            if self.f_statistics_widget.log.is_changed_signal_connected():
+                self.f_statistics_widget.log.changed.disconnect(self.log_widget.set_text)
+            self.pca_widget.log.changed.connect(self.log_widget.set_text)
+            self.pca_widget.log.set_text()
         elif index == 4:
             if self.sel_pops_widget.log.is_changed_signal_connected():
                 self.sel_pops_widget.log.changed.disconnect(self.log_widget.set_text)
@@ -119,6 +143,8 @@ class MainWindow(QWidget):
                 self.mix_model_widget.log.changed.disconnect(self.log_widget.set_text)
             if self.sel_pops_widget.log.is_changed_signal_connected():
                 self.sel_pops_widget.log.changed.disconnect(self.log_widget.set_text)
+            if self.pca_widget.log.is_changed_signal_connected():
+                self.pca_widget.log.changed.disconnect(self.log_widget.set_text)
             self.f_statistics_widget.log.changed.connect(self.log_widget.set_text)
             self.f_statistics_widget.log.set_text()
 

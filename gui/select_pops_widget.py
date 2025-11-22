@@ -27,6 +27,7 @@ from PySide6.QtWidgets import QProgressBar, QVBoxLayout, QHBoxLayout, QFormLayou
 
 
 class SelectPopsWidget(QWidget):
+    selected_pops_changed = Signal()
     computation_result = Signal(bool)
 
     def __init__(self, core):
@@ -40,7 +41,9 @@ class SelectPopsWidget(QWidget):
 
         # Log
         self.log = LogSystem(['main', 'progress', 'timing', 'check'])
-        self.log.set_entry('main', 'Select entries from the available populations on the left table and compute their allele frequencies.')
+        self.log.append_entry('main', 'Select entries from the available populations on the left table and compute their allele frequencies.')
+        self.log.append_entry('main', 'A minimum of 7 populations is required (3 for admixture model + 4 auxiliary populations).')
+        self.log.append_entry('main', 'To perform bootstrap, a minimum of 11 populations is required (of which 8 are auxiliaries).')
         self.log.append_entry('timing', '')
         self.log.append_entry('check', '')
 
@@ -169,6 +172,20 @@ class SelectPopsWidget(QWidget):
         layout.addWidget(separator)
         layout.addLayout(clayout)
 
+        self.selected_pops_changed.connect(self.reset_controls)
+
+    @Slot()
+    def reset_controls(self):
+        self.log.clear_entry('main')
+        self.log.append_entry('main', 'Select entries from the available populations on the left table and compute their allele frequencies.')
+        self.log.append_entry('main', 'A minimum of 7 populations is required (3 for admixture model + 4 auxiliary populations). ')
+        self.log.append_entry('main', 'To perform bootstrap, a minimum of 11 populations is required (of which 8 are auxiliaries). ')
+        self.log.clear_entry('progress')
+        self.log.clear_entry('timing')
+        self.log.clear_entry('check')
+
+        self.progress_bar.setValue(0)
+
     def disable_controls(self):
         self.comp_button.setEnabled(False)
         self.stop_button.setEnabled(False)
@@ -209,7 +226,8 @@ class SelectPopsWidget(QWidget):
             table_widget_item.setFlags(Qt.ItemFlag.ItemIsEnabled | Qt.ItemFlag.ItemIsSelectable)
             self.selected_table.setItem(index, 0, table_widget_item)
 
-        self.comp_button.setEnabled(len(pops) > 0)
+        self.comp_button.setEnabled(len(pops) >= 7)
+        self.selected_pops_changed.emit()
 
     @Slot(int)
     def set_num_procs(self, procs):

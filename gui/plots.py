@@ -86,6 +86,29 @@ class Plot(QWidget):
 
         layout.addWidget(self.canvas)
 
+    def clear(self, title, xlabel, ylabel, show_axes=True, polar=False):
+        self.axes.clear()
+        self.axes.set_title(title)
+
+        if polar:
+            self.axes.set_thetamin(0)
+            self.axes.set_thetamax(180)
+
+            self.axes.set_rticks([])
+
+            self.axes.bar(0, 1, np.pi / 2, color=(1, 0.8, 0.4), alpha=0.5, align='edge')
+            self.axes.bar(np.pi / 2, 1, np.pi / 2, color=(0.8, 1, 0.4), alpha=0.5, align='edge')
+        else:
+            self.axes.set_xlabel(xlabel)
+            self.axes.set_ylabel(ylabel)
+
+        if not show_axes:
+            self.axes.axis('off')
+
+        self.canvas.fig.legends = []
+
+        self.canvas.fig.canvas.draw()
+
     def select_point(self, event):
         if self.selectable_plot is not None and event.inaxes == self.axes:
             cont, ind = self.selectable_plot.contains(event)

@@ -103,6 +103,18 @@ class FStatisticsWidget(QWidget):
         self.f3_compute_button.clicked.connect(self.compute_f3)
         self.f4_compute_button.clicked.connect(self.compute_f4)
 
+    @Slot()
+    def reset_controls(self):
+        self.f2_table.setRowCount(0)
+        self.f3_table.setRowCount(0)
+        self.f4_table.setRowCount(0)
+
+        self.log.clear_entry('main')
+        self.log.append_entry('main', 'Choose populations, then compute results.')
+        self.log.clear_entry('f2')
+        self.log.clear_entry('f3')
+        self.log.clear_entry('f4')
+
     @Slot(bool)
     def init_pop_tables(self, result):
         if not result:

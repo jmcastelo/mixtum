@@ -34,6 +34,7 @@ class MixModelWidget(QWidget):
 
         # Core
         self.core = core
+        self.old_sel_pops = self.core.selected_pops
 
         # Thread pool
         self.thread_pool = QThreadPool()
@@ -90,10 +91,10 @@ class MixModelWidget(QWidget):
         self.compute_button.clicked.connect(self.compute_results)
 
         # Bootstrap checkbox
-        self.bootstrap_checkbox = QCheckBox('Boostrap')
+        self.bootstrap_checkbox = QCheckBox('Bootstrap')
         self.bootstrap_checkbox.setSizePolicy(QSizePolicy.Policy.Maximum, QSizePolicy.Policy.Maximum)
         self.bootstrap_checkbox.setEnabled(False)
-        self.bootstrap_checkbox.clicked.connect(self.set_bootstrap)
+        self.bootstrap_checkbox.toggled.connect(self.set_bootstrap)
 
         # Progress bar
         self.progress_bar = QProgressBar()
@@ -242,18 +243,45 @@ class MixModelWidget(QWidget):
         if not result:
             return
 
+        if self.core.selected_pops == self.old_sel_pops:
+             return
+
+        self.old_sel_pops = [pop for pop in self.core.selected_pops]
+
         self.populate_table_widget(self.hybrid_table)
         self.populate_table_widget(self.parent1_table)
         self.populate_table_widget(self.parent2_table)
         self.populate_table_widget(self.aux_table)
+
+        self.core.init_admixture_model()
 
         self.check_table_selection(self.hybrid_table, self.core.hybrid_pop)
         self.check_table_selection(self.parent1_table, self.core.parent1_pop)
         self.check_table_selection(self.parent2_table, self.core.parent2_pop)
         self.check_aux_table_selection()
 
-        self.compute_button.setEnabled(True)
-        self.bootstrap_checkbox.setEnabled(True)
+        self.bootstrap_checkbox.setEnabled(self.aux_table.rowCount() >= 11)
+        self.set_buttons()
+
+    @Slot()
+    def reset_controls(self):
+        self.log.set_entry('main', 'Choose admixture model and auxiliary populations (>=4, or >=8 if bootstrap), then compute results.')
+        self.progress_bar.setValue(0)
+
+        self.plot_prime.clear('Renormalized admixture', 'x', 'y')
+        self.plot_histogram.clear('Histogram', 'x', 'y')
+        self.plot_bars.clear('Hybrid', '', '', show_axes = False)
+        self.plot_angle.clear('Angles', '', '', polar = True)
+
+        self.hybrid_table.setRowCount(0)
+        self.parent1_table.setRowCount(0)
+        self.parent2_table.setRowCount(0)
+        self.aux_table.setRowCount(0)
+
+        self.bootstrap_checkbox.setChecked(False)
+        self.bootstrap_checkbox.setEnabled(False)
+
+        self.old_sel_pops = []
 
     def check_table_selection(self, table, pop):
         self.hybrid_table.itemSelectionChanged.disconnect(self.hybrid_changed)
@@ -335,18 +363,17 @@ class MixModelWidget(QWidget):
         sel_items = self.aux_table.selectedItems()
         self.core.set_aux_pops([item.text() for item in sel_items])
         self.check_aux_table_selection()
-        if self.core.bootstrap:
-            self.compute_button.setEnabled(len(self.aux_table.selectedItems()) >= 8)
-        else:
-            self.compute_button.setEnabled(len(self.aux_table.selectedItems()) >= 4)
+        self.set_buttons()
+
+    def set_buttons(self):
+        self.compute_button.setEnabled(len(self.aux_table.selectedItems()) >= 4)
+        self.bootstrap_checkbox.setEnabled(len(self.aux_table.selectedItems()) >= 8)
+        if len(self.aux_table.selectedItems()) < 8:
+            self.bootstrap_checkbox.setChecked(False)
 
     @Slot()
     def set_bootstrap(self, checked):
         self.core.bootstrap = checked
-        if checked:
-            self.compute_button.setEnabled(len(self.aux_table.selectedItems()) >= 8)
-        else:
-            self.compute_button.setEnabled(len(self.aux_table.selectedItems()) >= 4)
 
     @Slot()
     def set_progress_bar_value(self, step):

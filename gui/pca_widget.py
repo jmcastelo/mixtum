@@ -14,6 +14,7 @@
 #    You should have received a copy of the GNU General Public License
 #    along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+from gui.log_system import LogSystem
 from gui.plots import Plot
 
 from pathlib import Path
@@ -32,6 +33,10 @@ class PCAWidget(QWidget):
 
         # Core
         self.core = core
+
+        # Log system
+        self.log = LogSystem(['main'])
+        self.log.set_entry('main', 'Select populations to represent PCA.')
 
         # Selected populations table widget
         self.sel_pops_table = QTableWidget()
@@ -94,6 +99,17 @@ class PCAWidget(QWidget):
         self.compute_button.clicked.connect(self.compute_pca)
         self.compute_button.clicked.connect(self.init_sel_pops_pca_table)
         self.save_button.clicked.connect(self.save_pca_data)
+
+    @Slot()
+    def reset_controls(self):
+        self.sel_pops_table.setRowCount(0)
+        self.sel_pops_pca_table.setRowCount(0)
+
+        self.compute_button.setEnabled(False)
+        self.save_button.setEnabled(False)
+
+        self.pca_plot_3d.clear('PCA', 'PC1', 'PC2')
+        self.pca_plot_2d.clear('PCA', 'PC1', 'PC2')
 
     @Slot(bool)
     def init_sel_pops_table(self, result):
