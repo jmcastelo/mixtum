@@ -19,9 +19,11 @@ from gui.select_file_widget import SelectFileWidget
 from gui.worker import Worker
 from gui.about_dialog import AboutDialog
 from gui.input_files_checker import InputFilesChecker
+from gui import resources
 
 from PySide6.QtCore import Qt, Signal, Slot, QThreadPool, QSize
 from PySide6.QtWidgets import QWidget, QPushButton, QSizePolicy, QGroupBox, QVBoxLayout, QHBoxLayout
+from PySide6.QtGui import QIcon, QPixmap
 
 
 
@@ -59,7 +61,7 @@ class InputFilesWidget(QWidget):
         stylesheet_12 = 'color: white; background-color: rgb(128, 64, 0); font-size: 24pt;'
         stylesheet_21 = 'color: white; background-color: rgb(0, 45, 128); font-size: 24pt;'
         stylesheet_22 = 'color: white; background-color: rgb(0, 64, 128); font-size: 24pt;'
-        stylesheet_31 = 'color: white; background-color: rgb(32, 128, 32); font-size: 20pt;'
+        stylesheet_31 = 'background-color: rgba(0, 0, 0, 0); border: 0px;'
 
         # Select file widgets
         self.geno_file_widget = SelectFileWidget('Select .geno file', '(*.geno)', stylesheet_11)
@@ -117,9 +119,12 @@ class InputFilesWidget(QWidget):
         opt_group_box.setLayout(opt_layout)
 
         # About dialog button
-        self.about_button = QPushButton('About Mixtum')
-        self.about_button.setMinimumSize(QSize(250, 50))
-        self.about_button.setSizePolicy(QSizePolicy.Policy.Maximum, QSizePolicy.Policy.Maximum)
+        self.about_button = QPushButton()
+        logo = QPixmap(":/images/logo_tiled.png")
+        self.about_button.setIcon(QIcon(logo))
+        self.about_button.setIconSize(logo.rect().size().scaled(350, 300, Qt.AspectRatioMode.KeepAspectRatio))
+        # self.about_button.setMinimumSize(QSize(250, 50))
+        # self.about_button.setSizePolicy(QSizePolicy.Policy.Maximum, QSizePolicy.Policy.Maximum)
         self.about_button.setStyleSheet(stylesheet_31)
         self.about_button.clicked.connect(self.show_about_dialog)
 
@@ -129,11 +134,13 @@ class InputFilesWidget(QWidget):
 
         # Child layout
         child_layout = QVBoxLayout()
+        child_layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
         child_layout.addWidget(opt_group_box)
         child_layout.addWidget(self.about_button)
 
         # Layout
         layout = QHBoxLayout(self)
+        layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
         layout.addWidget(req_group_box)
         layout.addLayout(child_layout)
 

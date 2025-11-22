@@ -21,9 +21,11 @@ from gui.select_pops_widget import SelectPopsWidget
 from gui.mix_model_widget import MixModelWidget
 from gui.pca_widget import PCAWidget
 from gui.f_statistics_widget import FStatisticsWidget
+from gui import resources
 
 from PySide6.QtCore import Qt, Slot
 from PySide6.QtWidgets import QWidget, QTabWidget, QSplitter, QVBoxLayout
+from PySide6.QtGui import QIcon, QPixmap
 
 
 
@@ -85,10 +87,14 @@ class MainWindow(QWidget):
         splitter.setOrientation(Qt.Orientation.Vertical)
         splitter.addWidget(self.tab)
         splitter.addWidget(self.log_widget)
+        splitter.setStretchFactor(0, 2)
+        splitter.setStretchFactor(1, 3)
 
         # Layout
         layout = QVBoxLayout(self)
         layout.addWidget(splitter)
+
+        self.setWindowIcon(QIcon(QPixmap(':/images/logo_transparent.png')))
 
     @Slot(int)
     def set_log_source(self, index):
