@@ -68,6 +68,7 @@ class MainWindow(QWidget):
         self.sel_pops_widget.selected_pops_changed.connect(self.mix_model_widget.reset_controls)
         self.sel_pops_widget.selected_pops_changed.connect(self.pca_widget.reset_controls)
         self.sel_pops_widget.selected_pops_changed.connect(self.f_statistics_widget.reset_controls)
+        self.sel_pops_widget.computation_result.connect(self.mix_model_widget.reset_controls)
         self.sel_pops_widget.computation_result.connect(self.mix_model_widget.init_pop_tables)
         self.sel_pops_widget.computation_result.connect(self.pca_widget.init_sel_pops_table)
         self.sel_pops_widget.computation_result.connect(self.f_statistics_widget.init_pop_tables)

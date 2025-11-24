@@ -13,7 +13,6 @@
 #
 #    You should have received a copy of the GNU General Public License
 #    along with this program.  If not, see <https://www.gnu.org/licenses/>.
-from fcntl import FASYNC
 
 from gui.log_system import LogSystem
 from gui.open_widget import OpenWidget
@@ -99,7 +98,7 @@ class MixModelWidget(QWidget):
 
         # Progress bar
         self.progress_bar = QProgressBar()
-        self.progress_bar.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Maximum)
+        self.progress_bar.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
         self.progress_bar.setMinimum(0)
         self.progress_bar.setMaximum(9)
         self.progress_bar.setValue(0)
