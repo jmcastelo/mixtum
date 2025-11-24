@@ -73,7 +73,7 @@ def population_allele_frequencies_packed(file_path, block_size, num_snp, pop_ind
 
 class Core:
     def __init__(self):
-        self.version = '0.2'
+        self.version = '1.1'
 
         self.geno_file_path = Path('')
         self.ind_file_path = Path('')
@@ -728,8 +728,11 @@ class Core:
 
         return True
 
-    def get_bootstrap_conditions(self):
-        num_aux_pops = len(self.aux_pops)
+    def get_bootstrap_conditions(self, aux_pops = None):
+        if aux_pops is None:
+            aux_pops = self.aux_pops
+
+        num_aux_pops = len(aux_pops)
 
         num_its = int(num_aux_pops * (num_aux_pops * 0.5 - 1) * 0.25)
         # num_its_ja = int(np.ceil(num_aux_pops / 2) * (np.ceil(num_aux_pops / 2) - 1) / 2)
@@ -742,7 +745,7 @@ class Core:
     def compute_bootstrap(self, progress_callback):
         progress_callback(0)
 
-        num_bootstrap_pops, num_its = self.get_bootstrap_conditions()
+        num_bootstrap_pops, num_its = self.get_bootstrap_conditions(self.aux_pops_computed)
 
         std_dev_alpha = 0
         std_dev_angle = 0
@@ -817,7 +820,7 @@ class Core:
 
     # Get result data in text form
     def admixture_data(self):
-        num_aux_pops = len(self.aux_pops)
+        num_aux_pops = len(self.aux_pops_computed)
         num_aux_pairs = int(num_aux_pops * (num_aux_pops - 1) / 2)
 
         angle_bootstrap_error = f'+/- {self.std_dev_angle:5.2f} deg (bootstrap, 95% CI)' if self.bootstrap else 'deg'
@@ -834,7 +837,7 @@ class Core:
         text += f'Alpha pre-JL: {self.alpha_pre_jl:6.4f}\n'
         text += f'Alpha (Non-Renormalized) post-JL: {self.alpha_std:6.4f} +/- {self.alpha_std_error:6.4f} (fit, 95% CI)\n'
         text += f'f4-ratio average if in [0, 1]: {self.alpha_ratio_avg:6.4f} +/- {self.alpha_ratio_std_dev:6.4f} (95% CI), {self.num_cases} cases\n'
-        text += f'Standard admixture test: f3(donor1, donor2; admix) < 0 ? {self.f3_test:8.6f}'
+        text += f'Standard admixture test: f3(source1, source2; admix) < 0 ? {self.f3_test:8.6f}'
 
         return text
 
@@ -865,7 +868,7 @@ class Core:
             headers = '{0:^{col_width}} {1:^{col_width}} {2:^{col_width}} {3:^{col_width}} {4:^{col_width}} {5:^{aux_pops_width}} {6:^{aux_pops_width}}'.format('f4primeAB', 'f4primeXB', 'f4AB', 'f4XB', 'f4-ratio', 'Aux1', 'Aux2', col_width = col_width, aux_pops_width = aux_pops_width)
             file.write(headers + '\n')
 
-            num_aux_pops = len(self.aux_pops)
+            num_aux_pops = len(self.aux_pops_computed)
 
             index = 0
 
@@ -875,24 +878,17 @@ class Core:
                     file.write(row + '\n')
                     index += 1
 
+    # Save selected populations
+    def save_used_populations(self, file_path):
+        with file_path.open(mode='w', encoding='utf-8') as file:
+            file.write(self.hybrid_pop + '\n')
+            file.write(self.parent1_pop + '\n')
+            file.write(self.parent2_pop + '\n')
+            file.write('\n'.join(self.aux_pops_computed))
+
     # Save results
     def save_admixture_data(self, file_path):
         with file_path.open(mode = 'w', encoding = 'utf-8') as file:
-            # num_aux_pops = len(self.aux_pops_computed)
-            # num_aux_pairs = int(num_aux_pops * (num_aux_pops - 1) / 2)
-
-            # file.write(f'Admixture model: {self.hybrid_pop} = {self.parent1_pop} + {self.parent2_pop}\n')
-            # file.write(f'SNPs employed: {self.num_valid_alleles} / {self.num_alleles}\n')
-            # file.write(f'Auxiliary populations: {num_aux_pops}\n')
-            # file.write(f'Auxiliary pairs: {num_aux_pairs}\n')
-            # file.write(f'Cos pre-JL:  {self.cosine_pre_jl:7.4f} ---> Angle pre-JL:  {self.angle_pre_jl:7.2f} deg vs 180 deg: {self.percentage_pre_jl:.1%}\n')
-            # file.write(f'Cos post-JL: {self.cosine_post_jl:7.4f} ---> Angle post-JL: {self.angle_post_jl:7.2f} deg vs 180 deg: {self.percentage_post_jl:.1%}\n')
-            # file.write(f'Alpha pre-JL:     {self.alpha_pre_jl:6.4f}\n')
-            # file.write(f'Alpha post-JL:    {self.alpha:6.4f} +/- {self.alpha_error:6.4f} (95% CI) (f4-prime, renormalized)\n')
-            # file.write(f'Alpha NR post-JL: {self.alpha_std:6.4f} +/- {self.alpha_std_error:6.4f} (95% CI) (f4, standard)\n')
-            # file.write(f'f4-ratio average if [0, 1]: {self.alpha_ratio_avg:6.4f} +/- {self.alpha_ratio_std_dev:6.4f} (95% CI), {self.num_cases} cases\n')
-            # file.write(f'Standard admixture test: f3(parent1, parent2; hybrid) < 0 ? {self.f3_test:8.6f}\n')
-
             file.write(self.admixture_data())
             file.write('\nAuxiliary population names:\n')
             file.write('\n'.join(self.aux_pops_computed))

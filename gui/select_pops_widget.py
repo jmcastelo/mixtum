@@ -155,7 +155,7 @@ class SelectPopsWidget(QWidget):
 
         # Cutoff form layout
         coflayout = QFormLayout()
-        coflayout.addRow('snp cutoff:', self.snp_cutoff_spin_box)
+        coflayout.addRow('SNP cutoff:', self.snp_cutoff_spin_box)
 
         # Computation layout
         clayout = QHBoxLayout()

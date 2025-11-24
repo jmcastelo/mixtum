@@ -16,6 +16,7 @@
 
 from PySide6.QtCore import Qt, QSize
 from PySide6.QtWidgets import QDialog, QDialogButtonBox, QVBoxLayout, QTabWidget, QTextEdit, QLabel
+from PySide6.QtGui import QIcon, QPixmap
 
 
 
@@ -708,7 +709,7 @@ Mixtum is organized as a set of tabs, each of which contains a step of the workf
 
 1. Input files.
 
-It is compulsory to select the triad '*.geno, *.ind, *.snp'. They are in EIGENSTRAT format. Optionally, you can select and load a plain text file with a list of populations of interest, in a column. Then, parse and check the input files. This may take several minutes depending on the size of the dataset and the CPU.
+It is compulsory to select the triad '*.geno, *.ind, *.snp'. They can be EIGENSTRAT or PACKEDANCESTRYMAP format. Optionally, you can select and load a plain text file with a list of populations of interest, in a column. Then, parse and check the input files. This may take several minutes depending on the size of the dataset and the CPU.
         
 2. Populations
 
@@ -756,3 +757,5 @@ Compute f2, f3 and f4 for specific combinations of populations. The statistics f
         self.setLayout(layout)
 
         self.resize(QSize(640, 800))
+
+        self.setWindowIcon(QIcon(QPixmap(':/images/logo_black.png')))

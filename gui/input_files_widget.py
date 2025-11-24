@@ -61,7 +61,7 @@ class InputFilesWidget(QWidget):
         stylesheet_12 = 'color: white; background-color: rgb(128, 64, 0); font-size: 24pt;'
         stylesheet_21 = 'color: white; background-color: rgb(0, 45, 128); font-size: 24pt;'
         stylesheet_22 = 'color: white; background-color: rgb(0, 64, 128); font-size: 24pt;'
-        stylesheet_31 = 'background-color: rgba(0, 0, 0, 0); border: 0px;'
+        stylesheet_31 = 'background-color: rgba(32, 32, 32, 255); border: 0px;'
 
         # Select file widgets
         self.geno_file_widget = SelectFileWidget('Select .geno file', '(*.geno)', stylesheet_11)
@@ -120,7 +120,7 @@ class InputFilesWidget(QWidget):
 
         # About dialog button
         self.about_button = QPushButton()
-        logo = QPixmap(":/images/logo_tiled.png")
+        logo = QPixmap(":/images/logo_transparent.png")
         self.about_button.setIcon(QIcon(logo))
         self.about_button.setIconSize(logo.rect().size().scaled(350, 300, Qt.AspectRatioMode.KeepAspectRatio))
         self.about_button.setSizePolicy(QSizePolicy.Policy.Maximum, QSizePolicy.Policy.Maximum)

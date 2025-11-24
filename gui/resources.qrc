@@ -1,6 +1,6 @@
 <!DOCTYPE RCC><RCC version="1.0">
 <qresource>
-    <file>images/logo_tiled.png</file>
+    <file>images/logo_black.png</file>
     <file>images/logo_transparent.png</file>
 </qresource>
 </RCC>

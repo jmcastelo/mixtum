@@ -13,6 +13,7 @@
 #
 #    You should have received a copy of the GNU General Public License
 #    along with this program.  If not, see <https://www.gnu.org/licenses/>.
+from fcntl import FASYNC
 
 from gui.log_system import LogSystem
 from gui.open_widget import OpenWidget
@@ -59,7 +60,7 @@ class MixModelWidget(QWidget):
         self.parent1_table.setSelectionMode(QAbstractItemView.SelectionMode.SingleSelection)
         self.parent1_table.verticalHeader().setVisible(False)
         self.parent1_table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
-        self.parent1_table.setHorizontalHeaderLabels(['Donor 1'])
+        self.parent1_table.setHorizontalHeaderLabels(['Source 1'])
 
         # Parent 2 table widget
         self.parent2_table = QTableWidget()
@@ -68,7 +69,7 @@ class MixModelWidget(QWidget):
         self.parent2_table.setSelectionMode(QAbstractItemView.SelectionMode.SingleSelection)
         self.parent2_table.verticalHeader().setVisible(False)
         self.parent2_table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
-        self.parent2_table.setHorizontalHeaderLabels(['Donor 2'])
+        self.parent2_table.setHorizontalHeaderLabels(['Source 2'])
 
         # Auxiliaries table widget
         self.aux_table = QTableWidget()
@@ -115,6 +116,12 @@ class MixModelWidget(QWidget):
         self.save_results_button.setSizePolicy(QSizePolicy.Policy.Maximum, QSizePolicy.Policy.Maximum)
         self.save_results_button.setEnabled(False)
         self.save_results_button.clicked.connect(self.save_results)
+
+        # Export command button
+        self.export_cmd_button = QPushButton('Export command')
+        self.export_cmd_button.setSizePolicy(QSizePolicy.Policy.Maximum, QSizePolicy.Policy.Maximum)
+        self.export_cmd_button.setEnabled(False)
+        self.export_cmd_button.clicked.connect(self.export_command)
 
         # Plots
         self.plot_prime = Plot('Renormalized admixture', 'x', 'y', 5, 4, 100, selectable=True)
@@ -232,6 +239,7 @@ class MixModelWidget(QWidget):
         llayout.addWidget(self.progress_bar)
         llayout.addWidget(self.save_f4_button)
         llayout.addWidget(self.save_results_button)
+        llayout.addWidget(self.export_cmd_button)
 
         # Layout
         layout = QVBoxLayout(self)
@@ -280,6 +288,11 @@ class MixModelWidget(QWidget):
 
         self.bootstrap_checkbox.setChecked(False)
         self.bootstrap_checkbox.setEnabled(False)
+
+        self.save_f4_button.setEnabled(False)
+        self.save_results_button.setEnabled(False)
+        self.bins_spinbox.setEnabled(False)
+        self.export_cmd_button.setEnabled(False)
 
         self.old_sel_pops = []
 
@@ -399,6 +412,7 @@ class MixModelWidget(QWidget):
         self.save_f4_button.setEnabled(True)
         self.save_results_button.setEnabled(True)
         self.bins_spinbox.setEnabled(True)
+        self.export_cmd_button.setEnabled(True)
 
     def results_computed(self, worker_name):
         if worker_name == 'results':
@@ -406,8 +420,18 @@ class MixModelWidget(QWidget):
                 self.compute_bootstrap()
             else:
                 self.output_results()
+
+                self.hybrid_table.setEnabled(True)
+                self.parent1_table.setEnabled(True)
+                self.parent2_table.setEnabled(True)
+                self.aux_table.setEnabled(True)
         elif worker_name == 'bootstrap':
             self.output_results()
+
+            self.hybrid_table.setEnabled(True)
+            self.parent1_table.setEnabled(True)
+            self.parent2_table.setEnabled(True)
+            self.aux_table.setEnabled(True)
 
     @Slot()
     def on_compute_error(self, info):
@@ -427,6 +451,11 @@ class MixModelWidget(QWidget):
             self.progress_bar.setMaximum(9)
 
         self.progress = 0
+
+        self.hybrid_table.setEnabled(False)
+        self.parent1_table.setEnabled(False)
+        self.parent2_table.setEnabled(False)
+        self.aux_table.setEnabled(False)
 
         self.thread_pool.start(worker)
 
@@ -485,3 +514,31 @@ class MixModelWidget(QWidget):
     # def set_std_sel_pops_label(self, index):
     #     pop1, pop2 = self.core.get_aux_pop_pair(index)
     #     self.std_sel_pops_label.setText(f"{pop1} + {pop2}")
+
+    @Slot()
+    def export_command(self):
+        # Select output file: selected pops
+        pops_file_name, pops_sel_filter = QFileDialog.getSaveFileName(self, 'Save populations')
+        if pops_file_name == '':
+            return
+
+        # Write to file
+        pops_file_path = Path(pops_file_name)
+        self.core.save_used_populations(pops_file_path)
+
+        # Select output file: command text
+        cmd_file_name, cmd_sel_filter = QFileDialog.getSaveFileName(self, 'Save command')
+        if cmd_file_name == '':
+            return
+
+        # Build command text
+        command_text = f"python mixtum.py --geno {self.core.geno_file_path} --ind {self.core.ind_file_path} --snp {self.core.snp_file_path} --pops {pops_file_name} --nprocs {self.core.num_procs}"
+        if self.core.snp_cutoff < self.core.num_snp:
+            command_text += f" --snp-cutoff {self.core.snp_cutoff}"
+        if self.core.bootstrap:
+            command_text += f" --bootstrap"
+
+        # Write to file
+        cmd_file_path = Path(cmd_file_name)
+        with cmd_file_path.open(mode='w', encoding='utf-8') as file:
+            file.write(command_text)

@@ -95,7 +95,7 @@ class MainWindow(QWidget):
         layout = QVBoxLayout(self)
         layout.addWidget(splitter)
 
-        self.setWindowIcon(QIcon(QPixmap(':/images/logo_transparent.png')))
+        self.setWindowIcon(QIcon(QPixmap(':/images/logo_black.png')))
 
     @Slot(int)
     def set_log_source(self, index):
