@@ -50,7 +50,7 @@ class MixModelWidget(QWidget):
         self.hybrid_table.setSelectionMode(QAbstractItemView.SelectionMode.SingleSelection)
         self.hybrid_table.verticalHeader().setVisible(False)
         self.hybrid_table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
-        self.hybrid_table.setHorizontalHeaderLabels(['Hybrid'])
+        self.hybrid_table.setHorizontalHeaderLabels(['Admix'])
 
         # Parent 1 table widget
         self.parent1_table = QTableWidget()
@@ -59,7 +59,7 @@ class MixModelWidget(QWidget):
         self.parent1_table.setSelectionMode(QAbstractItemView.SelectionMode.SingleSelection)
         self.parent1_table.verticalHeader().setVisible(False)
         self.parent1_table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
-        self.parent1_table.setHorizontalHeaderLabels(['Parent 1'])
+        self.parent1_table.setHorizontalHeaderLabels(['Donor 1'])
 
         # Parent 2 table widget
         self.parent2_table = QTableWidget()
@@ -68,7 +68,7 @@ class MixModelWidget(QWidget):
         self.parent2_table.setSelectionMode(QAbstractItemView.SelectionMode.SingleSelection)
         self.parent2_table.verticalHeader().setVisible(False)
         self.parent2_table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
-        self.parent2_table.setHorizontalHeaderLabels(['Parent 2'])
+        self.parent2_table.setHorizontalHeaderLabels(['Donor 2'])
 
         # Auxiliaries table widget
         self.aux_table = QTableWidget()
@@ -120,7 +120,7 @@ class MixModelWidget(QWidget):
         self.plot_prime = Plot('Renormalized admixture', 'x', 'y', 5, 4, 100, selectable=True)
         # self.plot_std = Plot('Standard admixture', 'x', 'y', 5, 4, 100, selectable=True)
         self.plot_histogram = Plot('Histogram', 'x', 'y', 5, 4, 100)
-        self.plot_bars = Plot('Hybrid', '', '', 5, 1.25, 100, False, False)
+        self.plot_bars = Plot('Admix', '', '', 5, 1.25, 100, False, False)
         self.plot_angle = Plot('Angles', '', '', 4, 4, 100, show_toolbar = False, polar = True)
 
         # Selected pop widgets: prime
@@ -270,7 +270,7 @@ class MixModelWidget(QWidget):
 
         self.plot_prime.clear('Renormalized admixture', 'x', 'y')
         self.plot_histogram.clear('Histogram', 'x', 'y')
-        self.plot_bars.clear('Hybrid', '', '', show_axes = False)
+        self.plot_bars.clear('Admix', '', '', show_axes = False)
         self.plot_angle.clear('Angles', '', '', polar = True)
 
         self.hybrid_table.setRowCount(0)

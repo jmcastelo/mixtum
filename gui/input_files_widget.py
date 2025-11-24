@@ -123,20 +123,27 @@ class InputFilesWidget(QWidget):
         logo = QPixmap(":/images/logo_tiled.png")
         self.about_button.setIcon(QIcon(logo))
         self.about_button.setIconSize(logo.rect().size().scaled(350, 300, Qt.AspectRatioMode.KeepAspectRatio))
-        # self.about_button.setMinimumSize(QSize(250, 50))
-        # self.about_button.setSizePolicy(QSizePolicy.Policy.Maximum, QSizePolicy.Policy.Maximum)
+        self.about_button.setSizePolicy(QSizePolicy.Policy.Maximum, QSizePolicy.Policy.Maximum)
         self.about_button.setStyleSheet(stylesheet_31)
         self.about_button.clicked.connect(self.show_about_dialog)
 
+        # About dialog
         self.about_dialog = AboutDialog(core)
         self.about_dialog.setModal(False)
         self.about_dialog.finished.connect(self.enable_about_button)
 
+        # About group box
+        about_group_box = QGroupBox('Press logo to read about')
+        about_group_box.setSizePolicy(QSizePolicy.Policy.Maximum, QSizePolicy.Policy.Maximum)
+        about_layout = QVBoxLayout()
+        about_layout.addWidget(self.about_button)
+        about_group_box.setLayout(about_layout)
+
         # Child layout
         child_layout = QVBoxLayout()
         child_layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        child_layout.addWidget(opt_group_box)
-        child_layout.addWidget(self.about_button)
+        child_layout.addWidget(opt_group_box, 0, Qt.AlignmentFlag.AlignCenter)
+        child_layout.addWidget(about_group_box, 0, Qt.AlignmentFlag.AlignCenter)
 
         # Layout
         layout = QHBoxLayout(self)
@@ -161,7 +168,9 @@ class InputFilesWidget(QWidget):
                 self.log.set_entry('main', 'Checking finished.')
                 self.log.append_entry('check', 'Parsed input files seem to have a valid structure.')
 
-                self.core.check_parsed_pops()
+                missing_pops = self.core.check_parsed_pops()
+                if len(missing_pops) > 0:
+                    self.pops_check_failed(missing_pops)
 
                 self.ind_file_parsed.emit()
 
@@ -220,13 +229,15 @@ class InputFilesWidget(QWidget):
 
     @Slot(str)
     def parsing_finished(self, worker_name):
-        self.core.check_parsed_pops()
+        missing_pops = self.core.check_parsed_pops()
+        if len(missing_pops) > 0:
+            self.pops_check_failed(missing_pops)
         self.log.set_entry('main', 'Parsing finished.')
         self.parsed_pops_changed.emit()
 
     @Slot(list)
     def pops_check_failed(self, missing_pops):
-        self.log.set_entry('pops', f'Error: The following populations are missing from .ind file and were deselected: {','.join(missing_pops)}')
+        self.log.set_entry('pops', f'Warning: The following populations are missing from .ind file and were deselected: {','.join(missing_pops)}')
         self.parsed_pops_changed.emit()
 
     @Slot()

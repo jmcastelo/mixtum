@@ -137,7 +137,7 @@ class Helper():
         self.core.parse_selected_populations(self.print_input_files_progress)
         missing_pops = self.core.check_parsed_pops()
         if len(missing_pops) > 0:
-            print(f'Error: The following populations are missing from .ind file and were deselected: {','.join(missing_pops)}')
+            print(f'Warning: The following populations are missing from .ind file and were deselected: {','.join(missing_pops)}')
 
     def check_snp_cutoff(self):
         if not self.core.check_snp_cutoff():

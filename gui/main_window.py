@@ -57,6 +57,7 @@ class MainWindow(QWidget):
 
         # Connections
         self.input_files_widget.ind_file_parsed.connect(self.sel_pops_widget.init_search_table)
+        self.input_files_widget.ind_file_parsed.connect(self.sel_pops_widget.init_selected_table)
         self.input_files_widget.ind_file_parsed.connect(self.sel_pops_widget.reset_controls)
         self.input_files_widget.ind_file_parsed.connect(self.pca_widget.reset_controls)
         self.input_files_widget.ind_file_parsed.connect(self.f_statistics_widget.reset_controls)
