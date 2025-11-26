@@ -11,13 +11,17 @@ Mixtum is a Python-based code that estimates ancestry contributions in a hybrid 
 
 ## Overview
 
-Mixtum has been developed as a graphical user interface (GUI) and as standalone Python script. Both versions use the same computation routines. Before running Mixtum, please ensure the required dependencies are met. Instructions to install them on Linux, Windows and Mac systems are given below.
+Mixtum has been developed as a graphical user interface (GUI) and as standalone Python script. Both versions use the same computation routines. Before running Mixtum, please ensure the required dependencies are met. Instructions to install them on Linux and Windows systems are given below. Optionally, use the Python package manager [uv](https://docs.astral.sh/uv/), available on Linux, Windows and macOS, to skip installing dependencies or creating virtual environments, and directly run Mixtum's GUI.
 
 ### Graphical user interface
 
-A GUI has been developed with Qt's `PySide6` library. Please, download the release and run the executable, or get the source code and run it with the following command:
+A GUI has been developed with Qt's `PySide6` library. Please, get the source code and run Mixtum's GUI with the following command:
 
     python mixtum_gui.py
+
+Optionally, run it via `uv`:
+
+    uv run --with numpy --with pyside6 --with matplotlib mixtum_gui.py
 
 ### Standalone script
 
@@ -53,7 +57,7 @@ In case the execution policy of PowerShell does not allow the execution of scrip
 
     Set-ExecutionPolicy -ExecutionPolicy RemoteSigned
 
-The standalone script depends on `numpy` and `matplotlib`. The graphical user interface depends on `pyside6`, `numpy` and `matplotlib`. Please, install these libraries in the virtual environment with `pip` as follows.
+The standalone script depends on [numpy](https://numpy.org/) and [matplotlib](https://matplotlib.org/). The graphical user interface also depends on [pyside6](https://doc.qt.io/qtforpython-6/). Please, install these libraries in the virtual environment with `pip` as follows.
 
     pip install pyside6 numpy matplotlib
 
@@ -83,9 +87,13 @@ Choose populations of interest to visualize their allele frequencies in terms of
 
 Compute f2, f3 and f4 for specific combinations of populations. The statistics f3 and f4 can be assigned to an angle in the interval [0,180] deg. which gives them a scale for comparison purposes between different combinations of populations.
 
-## Building the executable
+## Development notes
 
-We make use of [pyinstaller](https://pyinstaller.org/en/stable/) to build self-contained standalone executables for several operating systems. Note that the executable for each operating system must be built under that particular operating system, no cross-compiling is possible with this tool.
+The notes below are meant for developers of Mixtum. If you are a user you can safely ignore them.
+
+### How to build a self-contained executable?
+
+We can make use of [pyinstaller](https://pyinstaller.org/en/stable/) to build self-contained standalone executables for several operating systems. Note that the executable for each operating system must be built under that particular operating system, no cross-compiling is possible with this tool.
 
 First install `pyinstaller` in the virtual environment that contains the dependencies of Mixtum.
 
