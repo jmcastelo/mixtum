@@ -11,7 +11,7 @@ Mixtum is a Python-based code that estimates ancestry contributions in a hybrid 
 
 ## Overview
 
-Mixtum has been developed as a standalone Python script and as a graphical user interface (GUI). The GUI has been more thoroughly tested than the script version, so use the script at your own risk. Before running Mixtum, please ensure the required dependencies are met. Instructions to install them on Linux and Windows systems are given below. Alternatively, download the release suitable for your operating system, which contains a standalone executable. In this case, the dependencies are included in the executable and don't need to be installed.
+Mixtum has been developed as a graphical user interface (GUI) and as standalone Python script. Both versions use the same computation routines. Before running Mixtum, please ensure the required dependencies are met. Instructions to install them on Linux, Windows and Mac systems are given below.
 
 ### Graphical user interface
 
@@ -21,7 +21,7 @@ A GUI has been developed with Qt's `PySide6` library. Please, download the relea
 
 ### Standalone script
 
-To be run from the command line, this script needs some arguments which inform it where the needed input files are located, where to save the resulting output files and the number of parallel processes with which to perform the computations. Note that the script version of Mixtum is not as complete and well-tested than the GUI version.
+To be run from the command line, this script needs some arguments which inform it where the needed input files are located, where to save the resulting output files and the number of parallel processes with which to perform the computations, among others. To replicate the computation done on the GUI, one can export the arguments required to run the analogous command-line script, along with the populations used.
 
 To get help, please run the following command:
 
@@ -49,7 +49,7 @@ Whereas PowerShell requires running the following script:
 
     .venv\Scripts\Activate.ps1
 
-In case the execution policiy of PowerShell does not allow the execution of scripts, you can enable it with the following command on a PowerShell run as administrator:
+In case the execution policy of PowerShell does not allow the execution of scripts, you can enable it with the following command on a PowerShell run as administrator:
 
     Set-ExecutionPolicy -ExecutionPolicy RemoteSigned
 
@@ -63,17 +63,17 @@ Mixtum is organized as a set of tabs, each of which contains a step of the workf
 
 #### 1. Input files.
 
-It is compulsory to select the triad '*.geno, *.ind, *.snp'. They are in EIGENSTRAT format. Optionally, you can select and load a plain text file with a list of populations of interest, in a column. Then, parse and check the input files. This may take several minutes depending on the size of the dataset and the CPU.
+It is compulsory to select the triad '*.geno, *.ind, *.snp'. They are in EIGENSTRAT or PACKEDANCESTRYMAP format. Optionally, you can select and load a plain text file with a list of populations of interest, in a column. Then, parse and check the input files. This may take several minutes depending on the size of the dataset and the CPU.
 
 #### 2. Populations
 
 The left table contains all the population names in '*.ind'. They may be ordered alphabetically by clicking on the table's header, and selected/deselected with the mouse left button. Note that clicking while pressing the `shift` key allows you to select a range of populations, or pick specific ones with the `ctrl` key. The combination `ctrl + a` allows the selection of all populations. 
 
-After searching and choosing populations of interest, select the number of computation processes to parallelize the frequencies computation. Check how many cores your CPU has to tune this parameter. Then compute the frequencies to build up the table of allele frequencies on which all the f-statistics are computed or, equivalently, on which all the scalar products are carried out.
+After searching and choosing populations of interest, select the number of computation processes to parallelize the frequencies computation. Check how many cores your CPU has to tune this parameter. Then compute the table of allele frequencies on which all the f-statistics are computed or, equivalently, on which all the scalar products are carried out.
 
 #### 4. Admixture model
    
-Choose the admixture model and the set of auxiliary populations (at least 3) on the left side of the tab. Then compute the results. Ensure a reasonable stability of the outcomes with respect to the cardinal of the set. You can then examine the linear regression plot of the admixture model, and identify the auxiliary pairs by clicking the corresponding plot points. A glimpse may already inform you about the quality of the admixture model. Examine the angles, too. A good ancestral admixture reconstruction conveys the Post-JL angle is close to 180 degrees. A decreasing of the angle from Pre-JL to Post-JL points towards a bad admixture model.
+Choose the admixture model and the set of auxiliary populations (at least 4, or 8 if bootstrap is enabled) on the left side of the tab. Then compute the results. Ensure a reasonable stability of the outcomes with respect to the cardinal of the set. You can then examine the linear regression plot of the admixture model, and identify the auxiliary pairs by clicking the corresponding plot points. A glimpse may already inform you about the quality of the admixture model. Examine the angles, too. A good ancestral admixture reconstruction conveys the Post-JL angle is close to 180 degrees. A decreasing of the angle from Pre-JL to Post-JL points towards a bad admixture model.
 
 #### 5. PCA
 
@@ -102,26 +102,3 @@ Or if under Windows,
 to avoid providing a console window.
 
 If everything works fine, the executable can be found in the `dist` subdirectory.
-
-## Website development notes
-
-These notes are meant to be read by the developers of Mixtum.
-
-The experimental website version of the GUI can be set up for development as follows. First install `panel` and `watchfiles`, in the virtual environment that contains the rest of the dependencies.
-
-    pip install panel watchfiles
-    
-The website uses [Panel](https://panel.holoviz.org/) framework for the dashboard design. The code of the dashboard and that of the computation functions, is contained in a single Python script named `mixtum_panel.py`, without other additional scripts needed.
-
-To start delevopment run the following command which will open a web browser to watch the changes on the code as they are made.
-
-    panel serve mixtum_panel.py --show --autoreload
-
-To convert the code into a website, run the following commands.
-
-    panel convert mixtum_panel.py --to pyodide-worker --out docs
-    mv docs/mixtum_panel.html docs/index.html
-
-The website will be available as a GitHub page on the repository, once it has been activated.
-
-Note that in order for some Panel features to work we have used a beta version installed from the GitHub repository of Panel, and converted Mixtum to `pyscript` format. Once these features have been incorporated into the main Panel release, one can convert to `pyodide-worker` format as above.
