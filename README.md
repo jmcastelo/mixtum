@@ -1,5 +1,7 @@
 # Mixtum: a graphical tool for two-way admixture analysis in population genetics based on $f$-statistics
 
+<img width="777" height="500" alt="Mixtum logo" src="./gui/images/logo_black.png"/>
+
 ## Abstract
 
 Mixtum is a Python-based code that estimates ancestry contributions in a hybrid derived from a two-way admixture based on bi-allelic genotype data. The outcomes of Mixtum come from the geometric interpretation of the  $f$-statistics formalism. Designed with user-friendliness as a priority, Mixtum allows to interactively handle a menu of user-supplied populations to build different mixture models in conjunction with the set of auxiliary populations required by the framework. The results are presented graphically, including principal components plots of the allele frequencies in the dataset. More importantly, Mixtum provides a novel index (an angle) that assesses the quality of the ancestral reconstruction of the model under scrutiny. The conventional statistics $f_2$, $f_3$, $f_4$ as well as the  $f_3$ admixture test and the $f_4$-ratio are also provided.
@@ -71,7 +73,7 @@ It is compulsory to select the triad '*.geno, *.ind, *.snp'. They are in EIGENST
 
 #### 2. Populations
 
-The left table contains all the population names in '*.ind'. They may be ordered alphabetically by clicking on the table's header, and selected/deselected with the mouse left button. Note that clicking while pressing the `shift` key allows you to select a range of populations, or pick specific ones with the `ctrl` key. The combination `ctrl + a` allows the selection of all populations. 
+The left table contains all the population names in '*.ind'. They may be ordered alphabetically by clicking on the table's header, and selected/deselected with the mouse left button. Note that clicking while pressing the `SHIFT` key allows you to select a range of populations, or pick specific ones with the `CTRL` key. The combination `CTRL+A` allows the selection of all populations. 
 
 After searching and choosing populations of interest, select the number of computation processes to parallelize the frequencies computation. Check how many cores your CPU has to tune this parameter. Then compute the table of allele frequencies on which all the f-statistics are computed or, equivalently, on which all the scalar products are carried out.
 
@@ -86,6 +88,10 @@ Choose populations of interest to visualize their allele frequencies in terms of
 #### 6. f-statistics
 
 Compute f2, f3 and f4 for specific combinations of populations. The statistics f3 and f4 can be assigned to an angle in the interval [0,180] deg. which gives them a scale for comparison purposes between different combinations of populations.
+
+## How-to Mixtum?
+
+A step-by-step, how-to tutorial is available with an example of usage with detailed instructions. You can find it [here](./howto/HOWTO.md).  
 
 ## Development notes
 
