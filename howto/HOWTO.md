@@ -32,7 +32,7 @@ Next tab is the admixture model step:
 
 This is the main feature and purpose of Mixtum. Here you can choose the target population (admix), the two donors (source 1 will always be considered for the alpha value), and the auxiliary populations. After pressing the "Compute results" button, the results will be displayed on the log below, which you can save them to disk. On a detachable section, several plots are available: renormalized admixture, f4-ratio histogram and angles. On the fit plot, you can identify which pair of auxiliary populations corresponds to each point by clicking on a point. 
 
-Also, to replicate the calculations with the command-line script version of Mixtum, you can press the "Export command" button, which will save the populations used to a file, and the analogous command to a text file which you can open to copy and paste to your terminal.
+Also, to replicate the calculations with the command-line script version of Mixtum, you can press the "Export command" button, which will save the populations used to a file (corresponding to --pops flag), allow you to select a directory to store resulting output files (corresponding to --outdir flag), and the analogous command to a text file which you can open to copy and paste to your terminal.
 
 ## PCA
 

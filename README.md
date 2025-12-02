@@ -81,6 +81,8 @@ After searching and choosing populations of interest, select the number of compu
    
 Choose the admixture model and the set of auxiliary populations (at least 4, or 8 if bootstrap is enabled) on the left side of the tab. Then compute the results. Ensure a reasonable stability of the outcomes with respect to the cardinal of the set. You can then examine the linear regression plot of the admixture model, and identify the auxiliary pairs by clicking the corresponding plot points. A glimpse may already inform you about the quality of the admixture model. Examine the angles, too. A good ancestral admixture reconstruction conveys the Post-JL angle is close to 180 degrees. A decreasing of the angle from Pre-JL to Post-JL points towards a bad admixture model.
 
+Note that the bootstrap process performs random selections of auxiliary populations, so slight variations are expected for the error bar for different executions.
+
 #### 5. PCA
 
 Choose populations of interest to visualize their allele frequencies in terms of the Principal Components content in 2D and 3D. You can identify which points on the plots correspond to which population by clicking on them, or alternatively, by selecting populations on the second table, which contains those used in the PCA computation.

@@ -517,7 +517,7 @@ class MixModelWidget(QWidget):
     @Slot()
     def export_command(self):
         # Select output file: selected pops
-        pops_file_name, pops_sel_filter = QFileDialog.getSaveFileName(self, 'Save populations')
+        pops_file_name, pops_sel_filter = QFileDialog.getSaveFileName(self, 'Save populations (--pops)')
         if pops_file_name == '':
             return
 
@@ -525,13 +525,18 @@ class MixModelWidget(QWidget):
         pops_file_path = Path(pops_file_name)
         self.core.save_used_populations(pops_file_path)
 
+        # Select results output dir
+        outdir_name = QFileDialog.getExistingDirectory(self, 'Select output directory (--outdir)')
+        if outdir_name == '':
+            return
+
         # Select output file: command text
         cmd_file_name, cmd_sel_filter = QFileDialog.getSaveFileName(self, 'Save command')
         if cmd_file_name == '':
             return
 
         # Build command text
-        command_text = f"python mixtum.py --geno {self.core.geno_file_path} --ind {self.core.ind_file_path} --snp {self.core.snp_file_path} --pops {pops_file_name} --nprocs {self.core.num_procs}"
+        command_text = f"python mixtum.py --geno \"{self.core.geno_file_path}\" --ind \"{self.core.ind_file_path}\" --snp \"{self.core.snp_file_path}\" --pops \"{pops_file_name}\" --outdir \"{outdir_name}\" --nprocs {self.core.num_procs}"
         if self.core.snp_cutoff < self.core.num_snp:
             command_text += f" --snp-cutoff {self.core.snp_cutoff}"
         if self.core.bootstrap:
